@@ -30,4 +30,15 @@ Update this table as decisions get made, so future sessions don't need to re-der
 
 ## Commands
 
-No build/lint/test tooling exists yet. Once `app/` and `api/` are scaffolded, populate this section with the actual commands (e.g. `npm run ios`, `go test ./...`) so future sessions don't need to rediscover them.
+### `app/` (run from `app/`)
+
+```
+npm run start   # expo start
+npm run ios
+npm run android
+npm run lint    # expo lint
+```
+
+### `api/`
+
+Not scaffolded yet. Populate with the actual commands (e.g. `go test ./...`) once it exists.
