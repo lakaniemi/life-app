@@ -20,7 +20,8 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | Area          | Decision                                               | Notes                                                                                           |
 | ------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Mobile app    | React Native + Expo, TypeScript (`app/`)               | Primary learning goal                                                                           |
-| Backend       | Go, custom HTTP API (`api/`), framework not chosen yet | Deliberate second learning track                                                                |
+| Backend       | Go, stdlib `net/http` (`api/`), no framework           | Deliberate second learning track. Go 1.22+ ServeMux pattern routing; revisit (e.g. chi) only if it feels thin. |
+| API tooling   | golangci-lint v2, Makefile, GitHub Actions CI          | CI runs lint + `go test -race` + docker build on PRs touching `api/`.                            |
 | Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting is decided                                                        |
 | Hosting/infra | Google Cloud Run, `europe-north1` (Hamina, Finland)    | Always-free tier confirmed in console for this region: 2M req, 180k vCPU-s, 360k GiB-s / month. Same country as the DB. |
 | Deploy artifact | Docker image, multi-stage build on `distroless/static` | `CGO_ENABLED=0` for a static binary; ~15–25MB image. Gotchas: distroless has no shell, and needs `import _ "time/tzdata"` for `time.LoadLocation`. |
@@ -43,6 +44,13 @@ npm run android
 npm run lint    # expo lint
 ```
 
-### `api/`
+### `api/` (run from `api/`; see `api/README.md` for prerequisites)
 
-Not scaffolded yet. Populate with the actual commands (e.g. `go test ./...`) once it exists.
+```
+make run            # go run ./cmd/api, on $PORT (default 8080)
+make test           # go test -race ./...
+make lint           # golangci-lint run
+make fmt            # golangci-lint fmt
+make docker-build
+make docker-run
+```
