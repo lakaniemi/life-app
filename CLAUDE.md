@@ -22,9 +22,13 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | Mobile app    | React Native + Expo, TypeScript (`app/`)               | Primary learning goal                                                                           |
 | Backend       | Go, custom HTTP API (`api/`), framework not chosen yet | Deliberate second learning track                                                                |
 | Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting is decided                                                        |
-| Hosting/infra | Not decided yet                                        | Needs to be free or cheap — personal/family-scale traffic. Revisit once the API has real shape. |
-| Database      | Not decided yet                                        |                                                                                                 |
+| Hosting/infra | Google Cloud Run, `europe-north1` (Hamina, Finland)    | Always-free tier confirmed in console for this region: 2M req, 180k vCPU-s, 360k GiB-s / month. Same country as the DB. |
+| Deploy artifact | Docker image, multi-stage build on `distroless/static` | `CGO_ENABLED=0` for a static binary; ~15–25MB image. Gotchas: distroless has no shell, and needs `import _ "time/tzdata"` for `time.LoadLocation`. |
+| Database      | Existing Postgres in Oulu, Finland (hobby association, no extra cost) | **Pending verification**: must be reachable over public internet with `sslmode=verify-full`. If it's firewall/VPN-only, Cloud Run can't reach it and this choice collapses. |
+| DB backups    | Deferred                                               | Revisit once there's real family data in the DB — someone else operates that server, so their backup practices are currently an unknown we've accepted. |
 | Auth          | Not decided yet                                        |                                                                                                 |
+
+Portability hedge: keep the API coupled to nothing but a `DATABASE_URL` and a container image. That keeps a provider switch to an afternoon — which matters because the database is a social arrangement, not a contract.
 
 Update this table as decisions get made, so future sessions don't need to re-derive context from conversation history.
 
