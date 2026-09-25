@@ -5,5 +5,5 @@ Family life-management app — meal planning, shopping lists, and health trackin
 ## Stack
 
 - **`app/`** — React Native + Expo, TypeScript. Primary learning goal.
-- **`api/`** — Go. Second learning track (not Node/TS, which is already familiar).
+- **`api/`** — Go. Second learning track (not Node/TS, which is already familiar). See [`api/README.md`](api/README.md).
 - **`infra/`** — TBD. Cheap/free hosting, sized for personal-scale traffic.
