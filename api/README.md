@@ -37,7 +37,7 @@ make fmt            # format
 make generate       # regenerate Go code from SQL queries (sqlc)
 make build          # build binary to bin/api
 make docker-build   # build container image
-make docker-run     # run container image on port 8080, against local Postgres
+make docker-run     # run the image like prod: Postgres, migrations, then the API on port 8080
 
 make db-up          # start local Postgres
 make db-down        # stop it; data is kept in a Docker volume
@@ -50,12 +50,15 @@ make migrate-new name=<name>  # create a new SQL migration file
 
 ## Configuration
 
-| Variable            | Default                                    | Notes |
-| ------------------- | ------------------------------------------ | ----- |
-| `DATABASE_URL`      | Required. `make` sets it to local Postgres: `postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable` | Read by `cmd/api` and `cmd/migrate`. |
-| `PORT`              | `8080`                                     | Example: `PORT=3000 make run`. |
-| `ENVIRONMENT`       | `prod` (JSON logs)                         | `dev` gives coloured logs. `make run` and `make dev` set it. |
-| `TEST_DATABASE_URL` | Unset (database tests skip)                | Any database on the target server. Each test creates and drops its own database there. `make test-db` sets it. |
+`ENVIRONMENT` (`prod` by default, or `dev`) picks the defaults for everything else. The `make` targets that run locally (`run`, `dev`, `migrate-*`) set `ENVIRONMENT=dev`. An env var always overrides its default.
+
+| Variable            | `dev` default         | `prod` default | Notes |
+| ------------------- | --------------------- | -------------- | ----- |
+| `DATABASE_URL`      | Local Compose Postgres | None: required | Used by `cmd/api` and `cmd/migrate`. |
+| `PORT`              | `8080`                | `8080`         | Example: `PORT=3000 make run`. |
+| (log format)        | Coloured text         | JSON           | Not configurable separately. |
+
+`TEST_DATABASE_URL` points the database tests at a Postgres server; without it they skip. Each test creates and drops its own database there. `make test-db` sets it to local Postgres.
 
 ## Database
 
