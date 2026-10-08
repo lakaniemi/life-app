@@ -6,7 +6,8 @@
 - **Adding an endpoint:**
   1. Write the handler in its own file in `internal/server`.
   2. Register it in `routes.go`.
-  3. Add a table-driven test next to it that goes through `New(...)`, so routing is tested too.
+  3. Add endpoint tests next to it, following the checklist in `docs/TESTING_STRATEGY.md`.
+- **Tests:** follow `docs/TESTING_STRATEGY.md`. Endpoint tests against a real database are the default. Don't test generated code.
 - **Config:** `cmd/*` calls `config.Load(os.Getenv)`, which turns env vars into concrete settings (`config.Config`) that get passed down. `ENVIRONMENT` only selects defaults inside `Load` and isn't exposed, so no code branches on dev vs prod. Add a new setting as a `Config` field with per-environment defaults. Nothing else reads env vars, except `internal/dbtest` (`TEST_DATABASE_URL`), because tests have no `main`.
 - **Database:**
   - Schema changes are new goose migrations in `internal/migrations/` (`make migrate-new name=…`). Never edit a migration that has been merged.
