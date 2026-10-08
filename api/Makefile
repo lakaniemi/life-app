@@ -5,7 +5,7 @@ IMAGE := life-app-api
 DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 export DATABASE_URL
 
-.PHONY: run dev test lint fmt build docker-build docker-run db-up db-down \
+.PHONY: run dev test test-db lint fmt build docker-build docker-run db-up db-down \
 	migrate-up migrate-down migrate-status migrate-new generate
 
 run:
@@ -16,6 +16,11 @@ dev:
 
 test:
 	go test -race ./...
+
+# Also runs the integration tests. Each creates and drops its own database on
+# the server at DATABASE_URL, so the local dev data is untouched.
+test-db:
+	TEST_DATABASE_URL=$(DATABASE_URL) go test -race ./...
 
 lint:
 	golangci-lint run
