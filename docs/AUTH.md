@@ -39,7 +39,7 @@ The "Web" name is misleading for a mobile-only product. It's simply the client t
 
 ## ID token verification
 
-`api/internal/googleauth` verifies the token. It wraps [go-oidc](https://github.com/coreos/go-oidc) and implements Google's [backend verification checklist](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token):
+`api/internal/auth/google` verifies the token. It wraps [go-oidc](https://github.com/coreos/go-oidc) and implements Google's [backend verification checklist](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token):
 
 | Check | What it stops |
 | ----- | ------------- |
@@ -94,7 +94,7 @@ After login, the API issues its own session token. Google isn't involved again u
 - **Expired sessions** are rejected exactly like unknown ones. A user's expired rows are deleted when they log in.
 - **Sent as** `Authorization: Bearer <token>` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)), never in a URL, where it would end up in logs (RFC 6750 §5.3). A 401 carries `WWW-Authenticate: Bearer`, plus `error="invalid_token"` when a token was sent but isn't valid (§3).
 
-In the API, the `requireAuth` middleware (`api/internal/server/auth.go`) does the lookup. It puts the user and session IDs in the request context, and wraps each protected route in `routes.go`.
+In the API, `internal/auth` holds this logic, with no HTTP code: nonces, `LoginWithGoogle`, `Authenticate` and `Logout`. The `requireAuth` middleware (`api/internal/server/middleware.go`) reads the Bearer token and calls `Authenticate`. It puts the user and session IDs in the request context, and wraps each protected route in `routes.go`.
 
 ## Storage
 

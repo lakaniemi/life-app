@@ -55,7 +55,7 @@ Don't use test doubles for the database. Use them only for external services and
 - **Naming:** subtest names describe behavior, e.g. `"other family's list is not found"`.
 - **Context and failures:** use `t.Context()`. Use `t.Fatalf` only when the rest of the test can't meaningfully run. Otherwise use `t.Errorf`.
 - **Assertions:** use the stdlib, plus `github.com/google/go-cmp` for comparing structs and decoded bodies. Don't add assertion frameworks.
-- **Shared helpers:** keep them in a `_test.go` file in `internal/server`, e.g. `newTestServer(t)` (returns the handler and a `*db.Queries` for seeding) and `doJSON(...)` (builds and runs a request).
+- **Shared helpers:** keep them in a `_test.go` file in `internal/server`, e.g. `newTestServer(t)` (returns the handler and a `*db.Queries` for seeding) and its `do(...)` method (builds and runs a request).
 
 ## Coverage
 

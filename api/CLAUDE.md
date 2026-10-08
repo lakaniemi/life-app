@@ -2,9 +2,15 @@
 
 - **Go 1.27, no web framework.** Routing uses `net/http` ServeMux method and path patterns (`"GET /items/{id}"`, read with `r.PathValue("id")`). Don't add a router or framework without discussing it first.
 - **Layout:** `cmd/api` (server) and `cmd/migrate` (migrations) are entrypoints and only do wiring. All other code lives under `internal/`, which the compiler makes unimportable from outside this module. No `pkg/`.
+- **Packages by responsibility, not by layer.** No `handlers/`, `services/` or `utils/` packages.
+  - `internal/server` is the whole HTTP layer: routes, handlers, middleware and JSON helpers, all unexported.
+  - Domain logic goes in packages named for what they provide (e.g. `internal/auth`). They don't import `net/http`, and they report caller mistakes as sentinel errors, which handlers map to status codes.
+  - Create a domain package when there's real logic, such as rules, transactions or multi-step flows. A plain CRUD handler calls `db` directly.
+  - Adapters for external services go in a subpackage of the domain that uses them (e.g. `internal/auth/google`). The domain depends on them through a small interface it defines itself (`auth.TokenVerifier`).
+  - Inside a package, organize with file names: one file per route group or concern.
 - **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) http.Handler` constructors that take their dependencies as arguments, with no globals.
 - **Adding an endpoint:**
-  1. Write the handler in its own file in `internal/server`.
+  1. Write the handler in the route group's file in `internal/server` (e.g. `auth.go`, `me.go`), with any domain logic in its domain package.
   2. Register it in `routes.go`.
   3. Add endpoint tests next to it, following the checklist in `docs/TESTING_STRATEGY.md`.
 - **Tests:** follow `docs/TESTING_STRATEGY.md`. Endpoint tests against a real database are the default. Don't test generated code.
