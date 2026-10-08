@@ -5,7 +5,8 @@ IMAGE := life-app-api
 DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 export DATABASE_URL
 
-.PHONY: run dev test lint fmt build docker-build docker-run db-up db-down
+.PHONY: run dev test lint fmt build docker-build docker-run db-up db-down \
+	migrate-up migrate-down migrate-status migrate-new
 
 run:
 	ENVIRONMENT=dev go run ./cmd/api
@@ -36,3 +37,17 @@ db-up:
 
 db-down:
 	docker compose down
+
+migrate-up:
+	go run ./cmd/migrate up
+
+migrate-down:
+	go run ./cmd/migrate down
+
+migrate-status:
+	go run ./cmd/migrate status
+
+# Usage: make migrate-new name=add_sessions
+migrate-new:
+	@test -n "$(name)" || (echo "usage: make migrate-new name=<name>" && exit 1)
+	go run ./cmd/migrate create $(name)
