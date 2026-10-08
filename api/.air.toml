@@ -1,0 +1,9 @@
+tmp_dir = "bin"
+
+[build]
+cmd = "go build -o ./bin/api-dev ./cmd/api"
+entrypoint = ["./bin/api-dev"]
+include_ext = ["go"]
+# Send SIGINT and wait for our graceful shutdown instead of killing outright.
+send_interrupt = true
+kill_delay = "5s"

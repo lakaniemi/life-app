@@ -1,0 +1,19 @@
+version: "2"
+
+linters:
+  # "standard" = errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+  enable:
+    - bodyclose # HTTP response bodies must be closed
+    - errorlint # use errors.Is/As and %w, not == or type assertions
+    - gosec # security checks (e.g. http.Server without timeouts)
+    - misspell
+    - noctx # outgoing HTTP requests must carry a context
+    - revive # style checks, successor to golint
+    - sloglint # consistent slog key-value usage
+    - usestdlibvars # http.MethodGet over "GET", etc.
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
