@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/lmittmann/tint"
+
+	"github.com/lakaniemi/life-app/api/internal/config"
 )
 
-// prod logs JSON because Cloud Logging parses it.
-func newLogger(env string, w io.Writer) (*slog.Logger, error) {
-	switch env {
-	case "prod":
+func newLogger(format config.LogFormat, w io.Writer) (*slog.Logger, error) {
+	switch format {
+	case config.LogFormatJSON:
 		return slog.New(slog.NewJSONHandler(w, nil)), nil
-	case "dev":
+	case config.LogFormatPretty:
 		return slog.New(tint.NewTextHandler(w, &tint.Options{TimeFormat: time.TimeOnly})), nil
 	default:
-		return nil, fmt.Errorf("unknown ENVIRONMENT %q (want \"prod\" or \"dev\")", env)
+		return nil, fmt.Errorf("unknown log format %q", format)
 	}
 }

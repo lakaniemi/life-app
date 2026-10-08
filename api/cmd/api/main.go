@@ -2,7 +2,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -18,10 +17,12 @@ import (
 	// fails in the container.
 	_ "time/tzdata"
 
+	"github.com/lakaniemi/life-app/api/internal/config"
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
-// Cloud Run allows 10s between SIGTERM and SIGKILL.
+// Stays under the 10s that container platforms commonly allow between SIGTERM
+// and SIGKILL.
 const shutdownTimeout = 8 * time.Second
 
 func main() {
@@ -36,13 +37,26 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	env := cmp.Or(getenv("ENVIRONMENT"), "prod")
-	logger, err := newLogger(env, stdout)
+	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err
 	}
 
-	addr := net.JoinHostPort("", cmp.Or(getenv("PORT"), "8080"))
+	logger, err := newLogger(cfg.LogFormat, stdout)
+	if err != nil {
+		return err
+	}
+
+	addr := net.JoinHostPort("", cfg.Port)
+
+	pool, err := newPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	// Deferred, so it runs after srv.Shutdown below has drained in-flight
+	// requests that may still be using connections.
+	defer pool.Close()
+	logger.Info("database connected")
 
 	srv := &http.Server{
 		Handler:           server.New(logger),
