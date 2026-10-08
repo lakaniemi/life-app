@@ -59,7 +59,7 @@ Don't use test doubles for the database. Use them only for external services and
 
 ## Coverage
 
-`make cover` shows coverage locally. CI shows a summary on each run and uploads the HTML report. Coverage is measured across all of `internal/` (`-coverpkg`), so endpoint tests count toward the queries they run, not just the handlers.
+`make cover` shows coverage locally. CI posts a summary as a PR comment (updated on each push) and uploads the HTML report. Coverage is measured across all of `internal/` (`-coverpkg`), so endpoint tests count toward the queries they run, not just the handlers.
 
 There's no threshold. Use the report to find untested branches in handlers, not as a number to raise.
 

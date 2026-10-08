@@ -21,6 +21,10 @@ defaults:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For the coverage comment.
+      pull-requests: write
     services:
       # Same major version as api/compose.yaml.
       postgres:
@@ -53,15 +57,31 @@ jobs:
       - run: go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
         env:
           TEST_DATABASE_URL: postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
-      - name: Coverage summary
+      - name: Coverage report
         run: |
           go tool cover -html=coverage.out -o coverage.html
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}')
           {
-            echo "### API coverage"
+            echo "### API coverage: $total"
+            echo
+            echo "<details><summary>Per function</summary>"
+            echo
             echo '```'
             go tool cover -func=coverage.out
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "</details>"
+            echo
+            echo "HTML report: \`api-coverage\` artifact on the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+          } > coverage.md
+          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+      # Edits the bot's previous comment, so each PR keeps a single coverage
+      # comment that updates on every push.
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        run: gh pr comment "$PR_NUMBER" --body-file coverage.md --edit-last --create-if-none
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
       - uses: actions/upload-artifact@v7
         with:
           name: api-coverage
