@@ -6,7 +6,7 @@ DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disabl
 export DATABASE_URL
 
 .PHONY: run dev test lint fmt build docker-build docker-run db-up db-down \
-	migrate-up migrate-down migrate-status migrate-new
+	migrate-up migrate-down migrate-status migrate-new generate
 
 run:
 	ENVIRONMENT=dev go run ./cmd/api
@@ -51,3 +51,6 @@ migrate-status:
 migrate-new:
 	@test -n "$(name)" || (echo "usage: make migrate-new name=<name>" && exit 1)
 	go run ./cmd/migrate create $(name)
+
+generate:
+	go tool sqlc generate

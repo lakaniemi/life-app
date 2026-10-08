@@ -1,0 +1,18 @@
+version: "2"
+sql:
+  - engine: postgresql
+    # sqlc reads the goose migrations as the schema and ignores the Down sections.
+    schema: internal/migrations
+    queries: internal/db/queries
+    gen:
+      go:
+        package: db
+        out: internal/db
+        sql_package: pgx/v5
+        overrides:
+          # pgx's own pgtype.UUID / pgtype.Timestamptz work, but these are
+          # the types the rest of the code wants to use.
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: timestamptz
+            go_type: time.Time
