@@ -22,14 +22,14 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | Mobile app    | React Native + Expo, TypeScript (`app/`)               | Primary learning goal                                                                           |
 | Backend       | Go, stdlib `net/http` (`api/`), no framework           | Deliberate second learning track. Go 1.22+ ServeMux pattern routing; revisit (e.g. chi) only if it feels thin. |
 | API tooling   | golangci-lint v2, Makefile, GitHub Actions CI          | CI runs lint + `go test -race` + docker build on PRs touching `api/`.                            |
-| Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting is decided                                                        |
-| Hosting/infra | Google Cloud Run, `europe-north1` (Hamina, Finland)    | Always-free tier confirmed in console for this region: 2M req, 180k vCPU-s, 360k GiB-s / month. Same country as the DB. |
+| Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting and database are decided                                          |
+| Hosting/infra | Google Cloud Run, `europe-north1` (Hamina, Finland)    | Always-free tier confirmed in console for this region: 2M req, 180k vCPU-s, 360k GiB-s / month. |
 | Deploy artifact | Docker image, multi-stage build on `distroless/static` | `CGO_ENABLED=0` for a static binary; ~15–25MB image. Gotchas: distroless has no shell, and needs `import _ "time/tzdata"` for `time.LoadLocation`. |
-| Database      | Existing Postgres in Oulu, Finland (hobby association, no extra cost) | **Pending verification**: must be reachable over public internet with `sslmode=verify-full`. If it's firewall/VPN-only, Cloud Run can't reach it and this choice collapses. |
-| DB backups    | Deferred                                               | Revisit once there's real family data in the DB — someone else operates that server, so their backup practices are currently an unknown we've accepted. |
+| Database      | PostgreSQL; **production location undecided**          | Local development only for now (Docker). When it matters, likely a managed Postgres free tier (verify current limits/regions first). Must be reachable from Cloud Run with `sslmode=verify-full`. |
+| DB backups    | Deferred                                               | Decide together with the production database.                                                  |
 | Auth          | Not decided yet                                        |                                                                                                 |
 
-Portability hedge: keep the API coupled to nothing but a `DATABASE_URL` and a container image. That keeps a provider switch to an afternoon — which matters because the database is a social arrangement, not a contract.
+Portability hedge: keep the API coupled to nothing but a `DATABASE_URL` and a container image. That keeps a provider switch to an afternoon, and lets development proceed before the production database is chosen.
 
 Update this table as decisions get made, so future sessions don't need to re-derive context from conversation history.
 
