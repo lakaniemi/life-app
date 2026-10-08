@@ -20,6 +20,8 @@ import (
 	// time.LoadLocation would fail in the container.
 	_ "time/tzdata"
 
+	"github.com/lmittmann/tint"
+
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
@@ -41,12 +43,18 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	logger := slog.New(slog.NewJSONHandler(stdout, nil))
+	// ENVIRONMENT is only read here, to pick concrete settings. Code deeper
+	// in the app receives those settings rather than checking the
+	// environment name itself.
+	env := cmp.Or(getenv("ENVIRONMENT"), "prod")
+	logger, err := newLogger(env, stdout)
+	if err != nil {
+		return err
+	}
 
-	port := cmp.Or(getenv("PORT"), "8080")
+	addr := net.JoinHostPort("", cmp.Or(getenv("PORT"), "8080"))
 
 	srv := &http.Server{
-		Addr:              net.JoinHostPort("", port),
 		Handler:           server.New(logger),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -54,16 +62,24 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 		IdleTimeout:       60 * time.Second,
 	}
 
+	// Bind the port before logging that we're listening, so a port conflict
+	// fails here with a clear error instead of after a misleading log line.
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", addr)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	logger.Info("server listening", "addr", ln.Addr().String())
+
 	serveErr := make(chan error, 1)
 	go func() {
-		logger.Info("server listening", "addr", srv.Addr)
-		serveErr <- srv.ListenAndServe()
+		serveErr <- srv.Serve(ln)
 	}()
 
 	select {
 	case err := <-serveErr:
-		// ListenAndServe only returns early on failure, e.g. port in use.
-		return fmt.Errorf("listen: %w", err)
+		// Serve only returns before shutdown if the server fails.
+		return fmt.Errorf("serve: %w", err)
 	case <-ctx.Done():
 		logger.Info("shutdown signal received")
 	}
@@ -78,4 +94,17 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	}
 	logger.Info("server stopped")
 	return nil
+}
+
+// newLogger returns a JSON logger for production (Cloud Logging parses it)
+// and a coloured, human-readable one for local development.
+func newLogger(env string, w io.Writer) (*slog.Logger, error) {
+	switch env {
+	case "prod":
+		return slog.New(slog.NewJSONHandler(w, nil)), nil
+	case "dev":
+		return slog.New(tint.NewTextHandler(w, &tint.Options{TimeFormat: time.TimeOnly})), nil
+	default:
+		return nil, fmt.Errorf("unknown ENVIRONMENT %q (want \"prod\" or \"dev\")", env)
+	}
 }

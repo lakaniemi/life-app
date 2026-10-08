@@ -6,7 +6,7 @@ IMAGE := life-app-api
 .PHONY: run test lint fmt build docker-build docker-run
 
 run:
-	go run ./cmd/api
+	ENVIRONMENT=dev go run ./cmd/api
 
 test:
 	go test -race ./...

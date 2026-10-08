@@ -30,6 +30,8 @@ make docker-run     # run container image on port 8080
 
 The server listens on `$PORT` (default `8080`). Example: `PORT=3000 make run`.
 
+`$ENVIRONMENT` is `prod` (default, JSON logs) or `dev` (coloured logs). The `make` run targets set `dev`.
+
 ```sh
 curl -i localhost:8080/health
 ```
