@@ -21,7 +21,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | ------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Mobile app    | React Native + Expo, TypeScript (`app/`)               | Primary learning goal                                                                           |
 | Backend       | Go, stdlib `net/http` (`api/`), no framework           | Deliberate second learning track. Go 1.22+ ServeMux pattern routing; revisit (e.g. chi) only if it feels thin. |
-| API tooling   | golangci-lint v2, Makefile, GitHub Actions CI          | CI runs lint + `go test -race` + docker build on PRs touching `api/`.                            |
+| API tooling   | golangci-lint v2, Makefile, GitHub Actions CI          | CI runs lint, `sqlc diff`, build and `go test -race` (with a Postgres service) on PRs touching `api/`. No docker build in CI.                            |
 | Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting and database are decided                                          |
 | Hosting/infra | Google Cloud Run, `europe-north1` (Hamina, Finland)    | Always-free tier confirmed in console for this region: 2M req, 180k vCPU-s, 360k GiB-s / month. |
 | Deploy artifact | Docker image, multi-stage build on `distroless/static` | `CGO_ENABLED=0` for a static binary; ~15–25MB image. Gotchas: distroless has no shell, and needs `import _ "time/tzdata"` for `time.LoadLocation`. |
