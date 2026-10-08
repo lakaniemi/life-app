@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -40,6 +42,49 @@ WHERE google_sub = $1
 
 func (q *Queries) GetUserByGoogleSub(ctx context.Context, googleSub string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByGoogleSub, googleSub)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.GoogleSub,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, google_sub, name, created_at, updated_at FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.GoogleSub,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserName = `-- name: UpdateUserName :one
+UPDATE users
+SET name = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, google_sub, name, created_at, updated_at
+`
+
+type UpdateUserNameParams struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (q *Queries) UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserName, arg.ID, arg.Name)
 	var i User
 	err := row.Scan(
 		&i.ID,

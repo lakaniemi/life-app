@@ -7,6 +7,8 @@ users ──< sessions
   │
   └──< family_members >── families ──< family_invites
                              └──< (future family-owned tables)
+
+auth_nonces   (standalone; see docs/AUTH.md)
 ```
 
 ## Tables
@@ -46,6 +48,12 @@ CREATE TABLE sessions (
 );
 CREATE INDEX sessions_user_id_idx ON sessions (user_id);
 
+CREATE TABLE auth_nonces (
+    nonce       text PRIMARY KEY,
+    expires_at  timestamptz NOT NULL
+);
+CREATE INDEX auth_nonces_expires_at_idx ON auth_nonces (expires_at);
+
 CREATE TABLE family_invites (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     family_id   uuid NOT NULL REFERENCES families ON DELETE CASCADE,
@@ -57,7 +65,7 @@ CREATE TABLE family_invites (
 );
 ```
 
-Migrations add each table in the phase that first needs it: users/families/members in phase 1, sessions in phase 2, invites in phase 4.
+Migrations add each table in the phase that first needs it: users/families/members in phase 1, sessions and nonces in phase 2, invites in phase 4.
 
 ## Why it looks like this
 
