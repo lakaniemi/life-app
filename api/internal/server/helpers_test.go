@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,12 +16,27 @@ import (
 
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/dbtest"
+	"github.com/lakaniemi/life-app/api/internal/googleauth"
 )
+
+// fakeVerifier accepts exactly the ID tokens in its map, standing in for
+// Google. Real verification is tested in internal/googleauth.
+type fakeVerifier map[string]googleauth.Identity
+
+func (f fakeVerifier) Verify(_ context.Context, rawIDToken string) (googleauth.Identity, error) {
+	identity, ok := f[rawIDToken]
+	if !ok {
+		return googleauth.Identity{}, errors.New("fake verifier: unknown token")
+	}
+	return identity, nil
+}
 
 type testServer struct {
 	handler http.Handler
 	queries *db.Queries
 	pool    *pgxpool.Pool
+	// googleTokens are the ID tokens the fake Google verifier accepts.
+	googleTokens fakeVerifier
 }
 
 // newTestServer returns the full API handler on a fresh database, plus
@@ -27,10 +44,12 @@ type testServer struct {
 func newTestServer(t *testing.T) testServer {
 	t.Helper()
 	pool := dbtest.New(t)
+	googleTokens := fakeVerifier{}
 	return testServer{
-		handler: New(slog.New(slog.DiscardHandler), pool),
-		queries: db.New(pool),
-		pool:    pool,
+		handler:      New(slog.New(slog.DiscardHandler), pool, googleTokens),
+		queries:      db.New(pool),
+		pool:         pool,
+		googleTokens: googleTokens,
 	}
 }
 

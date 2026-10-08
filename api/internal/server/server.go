@@ -9,9 +9,9 @@ import (
 )
 
 // New returns the API's root handler with all routes and middleware applied.
-func New(logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
+func New(logger *slog.Logger, pool *pgxpool.Pool, verifier tokenVerifier) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger, pool)
+	addRoutes(mux, logger, pool, verifier)
 
 	var handler http.Handler = mux
 	handler = logRequests(logger, handler)

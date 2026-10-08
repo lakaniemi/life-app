@@ -54,6 +54,31 @@ We use a library rather than hand-rolled JWT parsing, as Google "strongly recomm
 
 The nonce is checked separately, because it needs the database. See [Nonce](#nonce).
 
+## Nonce
+
+**The threat: replay.** Suppose someone gets hold of a valid Google ID token for our app, for example from a log, a proxy or a compromised device. Signature, `iss`, `aud` and `exp` all check out for the token's roughly one-hour lifetime. Without a nonce, they could exchange it at `POST /auth/google` for a 90-day session.
+
+**The fix.** A nonce ("number used once") ties each ID token to one login attempt that *we* started:
+
+1. The app calls `POST /auth/nonce`. The API stores a random value (256 bits) with a 10-minute expiry.
+2. The app passes the nonce to Credential Manager (`setNonce`), and Google embeds it in the ID token's `nonce` claim. Because the token is signed, the nonce can't be swapped afterwards.
+3. At `POST /auth/google`, after the token itself verifies, the API **consumes** the nonce. The login is rejected if the nonce is missing, unknown, expired or already used.
+
+Consuming the nonce is one `DELETE … WHERE nonce = $1 AND expires_at > now() RETURNING nonce` statement. Check and use happen atomically: if two requests race with the same token, Postgres's row lock lets only one of them get the row back. A separate `SELECT` followed by a `DELETE` would let both pass.
+
+The token is verified *before* the nonce is consumed, so a forged token can't burn a legitimate user's nonce.
+
+**Sources:**
+- [OIDC Core §3.1.3.7](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation): if a nonce was sent, the claim "MUST be present and its value checked", and the client "SHOULD check the nonce value for replay attacks".
+- Android's [Sign in with Google guide](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation) recommends `setNonce()` "to prevent replay attacks", with server-side code validating that the request and response nonces are identical.
+
+**Alternative considered: a stateless, client-generated nonce.** In this variant, from [OIDC Core §15.5.2](https://openid.net/specs/openid-connect-core-1_0.html#NonceNotes), the client keeps a random secret, sends its hash as the nonce, and later proves possession of the secret.
+- It needs no table.
+- But it doesn't make a nonce single-use, and a token leaked together with the request body (e.g. through server logs) would still replay.
+- Server-issued, single-use nonces close both gaps, for the cost of one small table and one extra request at login.
+
+**Cleanup.** Each `POST /auth/nonce` first deletes expired nonces, using the `expires_at` index. That keeps the table bounded without a background job.
+
 ## Sessions
 
 After login, the API issues its own session token. Google isn't involved again until the next login.

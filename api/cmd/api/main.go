@@ -18,6 +18,7 @@ import (
 	_ "time/tzdata"
 
 	"github.com/lakaniemi/life-app/api/internal/config"
+	"github.com/lakaniemi/life-app/api/internal/googleauth"
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
@@ -67,8 +68,13 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	defer pool.Close()
 	logger.Info("database connected")
 
+	verifier, err := googleauth.New(ctx, cfg.GoogleClientIDs)
+	if err != nil {
+		return err
+	}
+
 	srv := &http.Server{
-		Handler:           server.New(logger, pool),
+		Handler:           server.New(logger, pool, verifier),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
