@@ -46,7 +46,6 @@ func run(ctx context.Context, args []string, getenv func(string) string) (err er
 	}
 	command := args[0]
 
-	// create only writes a file, so it runs without a database.
 	if command == "create" {
 		if len(args) != 2 {
 			return errors.New("usage: migrate create <name>")

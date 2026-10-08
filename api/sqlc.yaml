@@ -10,8 +10,7 @@ sql:
         out: internal/db
         sql_package: pgx/v5
         overrides:
-          # pgx's own pgtype.UUID / pgtype.Timestamptz work, but these are
-          # the types the rest of the code wants to use.
+          # Plain Go types instead of pgx's pgtype.UUID / pgtype.Timestamptz.
           - db_type: uuid
             go_type: github.com/google/uuid.UUID
           - db_type: timestamptz

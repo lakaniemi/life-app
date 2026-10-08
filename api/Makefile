@@ -1,7 +1,6 @@
 IMAGE := life-app-api
 
-# Local Postgres from compose.yaml. Override on the command line or in the
-# environment to point at another database.
+# Local Postgres from compose.yaml.
 DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 export DATABASE_URL
 
@@ -56,7 +55,6 @@ migrate-down:
 migrate-status:
 	go run ./cmd/migrate status
 
-# Usage: make migrate-new name=add_sessions
 migrate-new:
 	@test -n "$(name)" || (echo "usage: make migrate-new name=<name>" && exit 1)
 	go run ./cmd/migrate create $(name)
