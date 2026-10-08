@@ -55,6 +55,14 @@ func run(ctx context.Context, args []string, getenv func(string) string) (err er
 		return goose.Create(nil, migrations.Dir, args[1], "sql")
 	}
 
+	// Decided by the real environment, not the file, so a stray .env can never
+	// switch a deployment to dev.
+	if getenv("ENVIRONMENT") == "dev" {
+		if getenv, err = config.WithDotEnv(getenv, ".env"); err != nil {
+			return err
+		}
+	}
+
 	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err

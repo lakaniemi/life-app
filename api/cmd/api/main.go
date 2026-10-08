@@ -37,6 +37,15 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// Decided by the real environment, not the file, so a stray .env can never
+	// switch a deployment to dev.
+	if getenv("ENVIRONMENT") == "dev" {
+		var err error
+		if getenv, err = config.WithDotEnv(getenv, ".env"); err != nil {
+			return err
+		}
+	}
+
 	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err
