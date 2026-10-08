@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestLoad(t *testing.T) {
 	tests := []struct {
@@ -38,6 +42,11 @@ func TestLoad(t *testing.T) {
 			env:     map[string]string{"ENVIRONMENT": "staging", "DATABASE_URL": "postgres://x"},
 			wantErr: true,
 		},
+		{
+			name: "client ID list is trimmed and skips empty items",
+			env:  map[string]string{"ENVIRONMENT": "dev", "GOOGLE_CLIENT_IDS": " web , ,ios,"},
+			want: Config{LogFormat: LogFormatPretty, Port: "8080", DatabaseURL: localDatabaseURL, GoogleClientIDs: []string{"web", "ios"}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -55,8 +64,8 @@ func TestLoad(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Load() error = %v", err)
 			}
-			if got != tt.want {
-				t.Errorf("Load() = %+v, want %+v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Load() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

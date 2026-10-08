@@ -37,8 +37,11 @@ type Verifier struct {
 
 // New returns a Verifier that accepts tokens whose audience is in clientIDs.
 // Keys are fetched lazily on the first Verify, using ctx for the requests.
-func New(ctx context.Context, clientIDs []string) *Verifier {
-	return newVerifier(oidc.NewRemoteKeySet(ctx, jwksURL), clientIDs)
+func New(ctx context.Context, clientIDs []string) (*Verifier, error) {
+	if len(clientIDs) == 0 {
+		return nil, errors.New("no Google client IDs configured (GOOGLE_CLIENT_IDS)")
+	}
+	return newVerifier(oidc.NewRemoteKeySet(ctx, jwksURL), clientIDs), nil
 }
 
 func newVerifier(keySet oidc.KeySet, clientIDs []string) *Verifier {
