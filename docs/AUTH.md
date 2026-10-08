@@ -54,6 +54,23 @@ We use a library rather than hand-rolled JWT parsing, as Google "strongly recomm
 
 The nonce is checked separately, because it needs the database. See [Nonce](#nonce).
 
+## Sessions
+
+After login, the API issues its own session token. Google isn't involved again until the next login.
+
+- **Opaque, not a JWT.** The token is 32 random bytes, base64url-encoded, and means nothing on its own. Every request looks it up in `sessions`.
+  - That costs one indexed query per request.
+  - In return, revocation is just deleting a row: logout works immediately, and a stolen phone's session can be killed.
+  - A self-contained JWT stays valid until it expires, unless you add a denylist, which brings the database lookup back anyway.
+- **Why not reuse Google's ID token as the session?** It expires in about an hour, can't be revoked by us, and would tie every request to Google.
+- **Entropy.** 256 bits from `crypto/rand`, well above the [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) minimum of 64.
+- **Expiry: 90 days, sliding.** Each use pushes expiry 90 days out again. To avoid a write on every request, it's extended at most once a day (`last_used_at`). An active user stays signed in; a phone left unused for 90 days signs out.
+  - **Deliberate deviation:** OWASP also recommends an *absolute* timeout (a hard cap regardless of activity). Its suggested values are hours, and they're aimed at browser sessions. Mobile apps conventionally stay signed in, so there's no absolute cap for now. See [Known gaps](#known-gaps).
+- **Expired sessions** are rejected exactly like unknown ones. A user's expired rows are deleted when they log in.
+- **Sent as** `Authorization: Bearer <token>` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)), never in a URL, where it would end up in logs (RFC 6750 §5.3). A 401 carries `WWW-Authenticate: Bearer`, plus `error="invalid_token"` when a token was sent but isn't valid (§3).
+
+In the API, the `requireAuth` middleware (`api/internal/server/auth.go`) does the lookup. It puts the user and session IDs in the request context, and wraps each protected route in `routes.go`.
+
 ## Storage
 
 Two tables (`api/internal/migrations/00002_auth.sql`):
