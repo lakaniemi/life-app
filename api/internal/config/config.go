@@ -28,10 +28,8 @@ type Config struct {
 	DatabaseURL string
 }
 
-// Load reads configuration through getenv (os.Getenv outside tests).
-// ENVIRONMENT is "prod" (default) or "dev". Each setting falls back to that
-// environment's default when its own variable is unset. prod has no default
-// database, so DATABASE_URL is required there.
+// Load reads configuration through getenv (os.Getenv outside tests). prod has
+// no default DATABASE_URL, so it's required there.
 func Load(getenv func(string) string) (Config, error) {
 	var defaults Config
 	switch env := cmp.Or(getenv("ENVIRONMENT"), "prod"); env {

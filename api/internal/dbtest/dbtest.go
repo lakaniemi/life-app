@@ -20,9 +20,6 @@ import (
 // all migrations to it and returns a pool connected to it. The database is
 // dropped when the test ends. If TEST_DATABASE_URL is unset, the test is
 // skipped, so that plain `go test` works without a database.
-//
-// Reading the env var here is a deliberate exception to "env vars only in
-// cmd/": tests have no main to pass settings down from.
 func New(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 

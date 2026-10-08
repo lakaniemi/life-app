@@ -12,8 +12,7 @@ dev:
 test:
 	go test -race ./...
 
-# Also runs the integration tests against local Postgres. Each test creates
-# and drops its own database, so the local dev data is untouched.
+# Each test creates and drops its own database, so local dev data is untouched.
 test-db:
 	TEST_DATABASE_URL='postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable' go test -race ./...
 
