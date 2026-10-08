@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -42,10 +43,7 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 
 	logger := slog.New(slog.NewJSONHandler(stdout, nil))
 
-	port := getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := cmp.Or(getenv("PORT"), "8080")
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", port),

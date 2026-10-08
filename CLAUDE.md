@@ -44,13 +44,6 @@ npm run android
 npm run lint    # expo lint
 ```
 
-### `api/` (run from `api/`; see `api/README.md` for prerequisites)
+### `api/`
 
-```
-make run            # go run ./cmd/api, on $PORT (default 8080)
-make test           # go test -race ./...
-make lint           # golangci-lint run
-make fmt            # golangci-lint fmt
-make docker-build
-make docker-run
-```
+Run from `api/`. Targets are in the `Makefile`; `make fmt lint test` before committing.

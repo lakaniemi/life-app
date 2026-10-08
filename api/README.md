@@ -16,35 +16,20 @@ brew install go golangci-lint
 
 ## Commands
 
-Run from `api/`. The `make` targets are shortcuts. The equivalent raw command is shown alongside each one.
+Run from `api/`:
 
-| Task             | Make                | Raw command                                         |
-| ---------------- | ------------------- | --------------------------------------------------- |
-| Run locally      | `make run`          | `go run ./cmd/api`                                  |
-| Test             | `make test`         | `go test -race ./...`                               |
-| Lint             | `make lint`         | `golangci-lint run`                                 |
-| Format           | `make fmt`          | `golangci-lint fmt`                                 |
-| Build binary     | `make build`        | `CGO_ENABLED=0 go build -trimpath -o bin/api ./cmd/api` |
-| Build image      | `make docker-build` | `docker build -t life-app-api .`                    |
-| Run image        | `make docker-run`   | `docker run --rm -p 8080:8080 life-app-api`         |
+```sh
+make run            # run locally
+make test           # run tests
+make lint           # lint
+make fmt            # format
+make build          # build binary to bin/api
+make docker-build   # build container image
+make docker-run     # run container image on port 8080
+```
 
 The server listens on `$PORT` (default `8080`). Example: `PORT=3000 make run`.
 
 ```sh
 curl -i localhost:8080/health
 ```
-
-## Endpoints
-
-| Method | Path      | Description                                       |
-| ------ | --------- | ------------------------------------------------- |
-| GET    | `/health` | Liveness check. Returns `{"status":"ok"}`.        |
-
-## Layout
-
-```
-cmd/api/          entrypoint: config, logger, server lifecycle
-internal/server/  routes, handlers, middleware, and their tests
-```
-
-CI (`.github/workflows/api.yml`) runs lint, tests, and a Docker build on every PR that touches `api/`.

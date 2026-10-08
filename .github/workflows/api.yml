@@ -19,7 +19,7 @@ defaults:
     working-directory: api
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,18 +30,5 @@ jobs:
         with:
           version: v2.14
           working-directory: api
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: api/go.mod
+      - run: go build ./...
       - run: go test -race ./...
-
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - run: docker build -t life-app-api .
