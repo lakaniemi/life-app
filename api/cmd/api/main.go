@@ -44,6 +44,19 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 
 	addr := net.JoinHostPort("", cmp.Or(getenv("PORT"), "8080"))
 
+	databaseURL := getenv("DATABASE_URL")
+	if databaseURL == "" {
+		return errors.New("DATABASE_URL is not set")
+	}
+	pool, err := newPool(ctx, databaseURL)
+	if err != nil {
+		return err
+	}
+	// Deferred, so it runs after srv.Shutdown below has drained in-flight
+	// requests that may still be using connections.
+	defer pool.Close()
+	logger.Info("database connected")
+
 	srv := &http.Server{
 		Handler:           server.New(logger),
 		ReadHeaderTimeout: 5 * time.Second,

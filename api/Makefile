@@ -29,8 +29,12 @@ build:
 docker-build:
 	docker build -t $(IMAGE) .
 
+# Inside the container, localhost is the container itself; Docker Desktop
+# exposes the host as host.docker.internal.
 docker-run:
-	docker run --rm -p 8080:8080 $(IMAGE)
+	docker run --rm -p 8080:8080 \
+		-e DATABASE_URL=$(subst localhost,host.docker.internal,$(DATABASE_URL)) \
+		$(IMAGE)
 
 db-up:
 	docker compose up -d --wait
