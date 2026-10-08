@@ -17,8 +17,8 @@ import (
 	// fails in the container.
 	_ "time/tzdata"
 
+	"github.com/lakaniemi/life-app/api/internal/auth/google"
 	"github.com/lakaniemi/life-app/api/internal/config"
-	"github.com/lakaniemi/life-app/api/internal/googleauth"
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
@@ -68,7 +68,7 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	defer pool.Close()
 	logger.Info("database connected")
 
-	verifier, err := googleauth.New(ctx, cfg.GoogleClientIDs)
+	verifier, err := google.New(ctx, cfg.GoogleClientIDs)
 	if err != nil {
 		return err
 	}

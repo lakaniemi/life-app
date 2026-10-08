@@ -1,84 +1,76 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
-	"time"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-
-	"github.com/lakaniemi/life-app/api/internal/db"
+	"github.com/lakaniemi/life-app/api/internal/auth"
 )
 
-// authSession is what requireAuth puts in the request context.
-type authSession struct {
-	UserID    uuid.UUID
-	SessionID uuid.UUID
+type nonceResponse struct {
+	Nonce string `json:"nonce"`
 }
 
-// ctxKey is unexported, so no other package can read or overwrite the value
-// stored under it.
-type ctxKey struct{}
-
-// sessionFrom returns the session requireAuth stored. Only call it from
-// handlers wrapped in requireAuth.
-func sessionFrom(ctx context.Context) authSession {
-	s, ok := ctx.Value(ctxKey{}).(authSession)
-	if !ok {
-		panic("sessionFrom: no session in context; is the handler wrapped in requireAuth?")
-	}
-	return s
-}
-
-// requireAuth rejects requests without a valid session with 401, and passes
-// the rest to next with the session in the context.
-func requireAuth(logger *slog.Logger, queries *db.Queries, next http.Handler) http.Handler {
+func handleCreateNonce(logger *slog.Logger, authService *auth.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, ok := bearerToken(r)
-		if !ok {
-			w.Header().Set("WWW-Authenticate", "Bearer")
-			writeError(w, r, logger, http.StatusUnauthorized, "unauthorized", "missing bearer token")
-			return
-		}
-
-		session, err := queries.GetSessionByTokenHash(r.Context(), hashToken(token))
-		if errors.Is(err, pgx.ErrNoRows) {
-			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
-			writeError(w, r, logger, http.StatusUnauthorized, "unauthorized", "invalid or expired session")
-			return
-		}
+		nonce, err := authService.NewNonce(r.Context())
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
 		}
-
-		if time.Since(session.LastUsedAt) > sessionTouchInterval {
-			err := queries.TouchSession(r.Context(), db.TouchSessionParams{
-				ID:        session.ID,
-				ExpiresAt: time.Now().Add(sessionTTL),
-			})
-			if err != nil {
-				writeInternalError(w, r, logger, err)
-				return
-			}
-		}
-
-		ctx := context.WithValue(r.Context(), ctxKey{}, authSession{UserID: session.UserID, SessionID: session.ID})
-		next.ServeHTTP(w, r.WithContext(ctx))
+		writeJSON(w, r, logger, http.StatusOK, nonceResponse{Nonce: nonce})
 	})
 }
 
-// bearerToken extracts the token from "Authorization: Bearer <token>". The
-// scheme is case-insensitive (RFC 9110 section 11.1).
-func bearerToken(r *http.Request) (string, bool) {
-	scheme, token, ok := strings.Cut(r.Header.Get("Authorization"), " ")
-	if !ok || !strings.EqualFold(scheme, "Bearer") {
-		return "", false
-	}
-	token = strings.TrimSpace(token)
-	return token, token != ""
+type googleLoginRequest struct {
+	IDToken string `json:"idToken"`
+}
+
+type googleLoginResponse struct {
+	Token string       `json:"token"`
+	User  userResponse `json:"user"`
+}
+
+func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req googleLoginRequest
+		if err := decodeJSON(w, r, &req); err != nil {
+			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", err.Error())
+			return
+		}
+		if req.IDToken == "" {
+			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", "idToken is required")
+			return
+		}
+
+		token, user, err := authService.LoginWithGoogle(r.Context(), req.IDToken)
+		switch {
+		case errors.Is(err, auth.ErrInvalidIDToken):
+			// The reason stays in the logs. This also covers failing to fetch
+			// Google's keys, which isn't the client's fault, but can't be told
+			// apart from a bad token reliably.
+			logger.WarnContext(r.Context(), "google login rejected", "err", err)
+			writeError(w, r, logger, http.StatusUnauthorized, "invalid_id_token", "invalid Google ID token")
+			return
+		case errors.Is(err, auth.ErrInvalidNonce):
+			writeError(w, r, logger, http.StatusUnauthorized, "invalid_nonce", err.Error())
+			return
+		case err != nil:
+			writeInternalError(w, r, logger, err)
+			return
+		}
+
+		writeJSON(w, r, logger, http.StatusOK, googleLoginResponse{Token: token, User: newUserResponse(user)})
+	})
+}
+
+func handleLogout(logger *slog.Logger, authService *auth.Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := authService.Logout(r.Context(), sessionFrom(r.Context()).SessionID); err != nil {
+			writeInternalError(w, r, logger, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 }

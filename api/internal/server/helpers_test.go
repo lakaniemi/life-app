@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,19 +15,20 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/lakaniemi/life-app/api/internal/auth"
+	"github.com/lakaniemi/life-app/api/internal/auth/google"
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/dbtest"
-	"github.com/lakaniemi/life-app/api/internal/googleauth"
 )
 
 // fakeVerifier accepts exactly the ID tokens in its map, standing in for
-// Google. Real verification is tested in internal/googleauth.
-type fakeVerifier map[string]googleauth.Identity
+// Google. Real verification is tested in internal/auth/google.
+type fakeVerifier map[string]google.Identity
 
-func (f fakeVerifier) Verify(_ context.Context, rawIDToken string) (googleauth.Identity, error) {
+func (f fakeVerifier) Verify(_ context.Context, rawIDToken string) (google.Identity, error) {
 	identity, ok := f[rawIDToken]
 	if !ok {
-		return googleauth.Identity{}, errors.New("fake verifier: unknown token")
+		return google.Identity{}, errors.New("fake verifier: unknown token")
 	}
 	return identity, nil
 }
@@ -82,16 +84,16 @@ func (s testServer) seedUser(t *testing.T, name string) (db.User, db.Session, st
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
-	session, token := s.seedSession(t, user, time.Now().Add(sessionTTL))
+	session, token := s.seedSession(t, user, time.Now().Add(auth.SessionTTL))
 	return user, session, token
 }
 
 func (s testServer) seedSession(t *testing.T, user db.User, expiresAt time.Time) (db.Session, string) {
 	t.Helper()
-	token := newRandomToken()
+	token := rand.Text()
 	session, err := s.queries.CreateSession(t.Context(), db.CreateSessionParams{
 		UserID:    user.ID,
-		TokenHash: hashToken(token),
+		TokenHash: auth.HashToken(token),
 		ExpiresAt: expiresAt,
 	})
 	if err != nil {

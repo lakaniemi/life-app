@@ -35,7 +35,7 @@ type Config struct {
 // Load reads configuration through getenv (os.Getenv outside tests). prod has
 // no default DATABASE_URL, so it's required there. GOOGLE_CLIENT_IDS has no
 // default anywhere, but only the API server requires it, so it's validated
-// where it's used (googleauth.New), not here.
+// where it's used (google.New), not here.
 func Load(getenv func(string) string) (Config, error) {
 	var defaults Config
 	switch env := cmp.Or(getenv("ENVIRONMENT"), "prod"); env {

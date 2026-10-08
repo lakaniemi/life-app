@@ -6,18 +6,20 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/lakaniemi/life-app/api/internal/auth"
 	"github.com/lakaniemi/life-app/api/internal/db"
 )
 
-func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier tokenVerifier) {
+func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) {
 	queries := db.New(pool)
+	authService := auth.NewService(queries, verifier)
 
 	mux.Handle("GET /health", handleHealth(logger, pool))
 
-	mux.Handle("POST /auth/nonce", handleCreateNonce(logger, queries))
-	mux.Handle("POST /auth/google", handleGoogleLogin(logger, queries, verifier))
-	mux.Handle("POST /auth/logout", requireAuth(logger, queries, handleLogout(logger, queries)))
+	mux.Handle("POST /auth/nonce", handleCreateNonce(logger, authService))
+	mux.Handle("POST /auth/google", handleGoogleLogin(logger, authService))
+	mux.Handle("POST /auth/logout", requireAuth(logger, authService, handleLogout(logger, authService)))
 
-	mux.Handle("GET /me", requireAuth(logger, queries, handleGetMe(logger, queries)))
-	mux.Handle("PATCH /me", requireAuth(logger, queries, handlePatchMe(logger, queries)))
+	mux.Handle("GET /me", requireAuth(logger, authService, handleGetMe(logger, queries)))
+	mux.Handle("PATCH /me", requireAuth(logger, authService, handlePatchMe(logger, queries)))
 }

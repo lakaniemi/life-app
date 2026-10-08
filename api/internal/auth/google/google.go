@@ -1,6 +1,7 @@
-// Package googleauth verifies Google ID tokens. See docs/AUTH.md for the
-// checks and why each one matters.
-package googleauth
+// Package google verifies Google ID tokens: the Google-specific part of sign-in,
+// used by package auth. See docs/AUTH.md for the checks and why each one
+// matters.
+package google
 
 import (
 	"context"
