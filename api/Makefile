@@ -3,7 +3,7 @@ IMAGE := life-app-api
 # data is untouched.
 TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
-.PHONY: run dev test cover lint fmt build docker-build docker-run db-up db-down \
+.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down \
 	migrate-up migrate-down migrate-status migrate-new generate
 
 run:
@@ -20,6 +20,8 @@ test:
 cover:
 	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
 	go tool cover -func=coverage.out
+
+cover-html: cover
 	go tool cover -html=coverage.out
 
 lint:
