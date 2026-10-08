@@ -7,8 +7,6 @@ import (
 )
 
 // New returns the API's root handler with all routes and middleware applied.
-// Dependencies are passed in explicitly; as the API grows (database, config)
-// they get added as parameters here.
 func New(logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(mux, logger)

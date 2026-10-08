@@ -9,8 +9,7 @@ import (
 	"github.com/lmittmann/tint"
 )
 
-// newLogger returns a JSON logger for production (Cloud Logging parses it)
-// and a coloured, human-readable one for local development.
+// prod logs JSON because Cloud Logging parses it.
 func newLogger(env string, w io.Writer) (*slog.Logger, error) {
 	switch env {
 	case "prod":

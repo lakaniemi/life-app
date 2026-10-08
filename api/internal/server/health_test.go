@@ -9,7 +9,6 @@ import (
 )
 
 func TestHealth(t *testing.T) {
-	// Discard logs so test output stays readable.
 	handler := New(slog.New(slog.DiscardHandler))
 
 	tests := []struct {

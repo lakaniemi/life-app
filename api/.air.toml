@@ -1,7 +1,3 @@
-# Hot reload config for `make dev`. Only settings that differ from air's
-# defaults are listed; see https://github.com/air-verse/air.
-
-# Build output goes to bin/, which is already gitignored.
 tmp_dir = "bin"
 
 [build]

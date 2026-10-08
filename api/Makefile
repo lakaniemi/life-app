@@ -1,6 +1,3 @@
-# Thin shortcuts over go/docker commands. Each target is a one-liner you
-# can also run directly.
-
 IMAGE := life-app-api
 
 .PHONY: run dev test lint fmt build docker-build docker-run
