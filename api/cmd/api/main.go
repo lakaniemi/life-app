@@ -21,7 +21,8 @@ import (
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
-// Cloud Run allows 10s between SIGTERM and SIGKILL.
+// Stays under the 10s that container platforms commonly allow between SIGTERM
+// and SIGKILL.
 const shutdownTimeout = 8 * time.Second
 
 func main() {

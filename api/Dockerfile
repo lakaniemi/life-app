@@ -13,8 +13,8 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migr
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/api /api
-# Run migrations from the same image by overriding the entrypoint, e.g.
-# a Cloud Run Job with command /migrate and args up.
+# Run migrations from the same image by overriding the entrypoint:
+# /migrate up (see compose.yaml).
 COPY --from=build /out/migrate /migrate
 EXPOSE 8080
 USER nonroot:nonroot

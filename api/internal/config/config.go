@@ -11,7 +11,7 @@ import (
 // LogFormat selects how log lines are written.
 type LogFormat string
 
-// Log formats. prod uses JSON because Cloud Logging parses it.
+// Log formats. prod uses JSON so a log platform can parse the fields.
 const (
 	LogFormatPretty LogFormat = "pretty"
 	LogFormatJSON   LogFormat = "json"
