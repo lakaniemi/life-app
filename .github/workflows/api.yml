@@ -49,6 +49,23 @@ jobs:
       - name: Check sqlc-generated code is up to date
         run: go tool sqlc diff
       - run: go build ./...
-      - run: go test -race ./...
+      # Same coverage flags as `make cover`.
+      - run: go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
         env:
           TEST_DATABASE_URL: postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
+      - name: Coverage summary
+        run: |
+          go tool cover -html=coverage.out -o coverage.html
+          {
+            echo "### API coverage"
+            echo '```'
+            go tool cover -func=coverage.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: api-coverage
+          # `uses` steps ignore defaults.run.working-directory.
+          path: |
+            api/coverage.out
+            api/coverage.html

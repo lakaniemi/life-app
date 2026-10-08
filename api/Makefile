@@ -3,7 +3,7 @@ IMAGE := life-app-api
 # data is untouched.
 TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
-.PHONY: run dev test lint fmt build docker-build docker-run db-up db-down \
+.PHONY: run dev test cover lint fmt build docker-build docker-run db-up db-down \
 	migrate-up migrate-down migrate-status migrate-new generate
 
 run:
@@ -14,6 +14,13 @@ dev:
 
 test:
 	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test -race ./...
+
+# -coverpkg counts coverage across packages, so code exercised by endpoint
+# tests (e.g. sqlc queries) shows up as covered.
+cover:
+	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out
 
 lint:
 	golangci-lint run

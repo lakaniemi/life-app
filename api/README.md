@@ -31,6 +31,7 @@ curl -i localhost:8080/health
 make dev            # run locally with hot reload
 make run            # run locally
 make test           # run tests (needs make db-up)
+make cover          # run tests, print coverage and open the HTML report
 make lint           # lint
 make fmt            # format
 make generate       # regenerate Go code from SQL queries (sqlc)
