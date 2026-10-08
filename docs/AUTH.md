@@ -102,3 +102,52 @@ Two tables (`api/internal/migrations/00002_auth.sql`):
 
 - **`sessions`** stores the SHA-256 of each session token, never the token itself. A database leak then doesn't hand out working sessions. A fast hash is enough because the token is 32 random bytes, so there's nothing to brute-force. Slow hashes such as bcrypt exist for guessable passwords. `id` is separate from `token_hash`, so a session can be referred to (e.g. on logout) without the secret.
 - **`auth_nonces`** stores nonces in plain text. A nonce isn't a credential: on its own it's useless without a Google-signed ID token that contains it, and it travels inside that token anyway. The `expires_at` index serves the cleanup of expired rows.
+
+## Identity and privacy
+
+- **Users are identified by `sub`, never by email.** Google: "Only use Google ID token sub field as identifier for the user as it is unique among all Google Accounts and never reused", while "a Google Account can have multiple email addresses at different points in time" ([source](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)).
+- **No email is requested or stored.** Sign-in asks for `openid profile` only.
+- **`name`** is copied from the token on first login only. After that it belongs to the user (`PATCH /me`), and later logins never overwrite it. A token without a name (no `profile` scope) creates the user with an empty name.
+- Responses use dedicated structs (`userResponse`), so internal columns such as `google_sub` can't leak into JSON.
+
+## App side (phase 5)
+
+*To be completed when the app's sign-in is built.*
+
+- **Native sign-in through Credential Manager**, not a browser redirect. [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252) describes the general rules for native apps: an external user-agent, never an embedded WebView (§8.12), and PKCE (§6), because apps are public clients that can't keep a secret (§8.4). Credential Manager meets the same goals another way: Google Play services authenticates the user, and verifies the calling app by its package name and signing certificate (the Android OAuth client).
+- **Library choice is open.** In `@react-native-google-signin/google-signin`, a nonce on Android is supported only by the "Universal sign-in" API, and that's in the paid, licensed version. The free "Original" API takes a nonce on iOS only, and on Android it uses Google's deprecated legacy SDK ([API reference](https://react-native-google-signin.github.io/docs/api), checked 2026-10). The alternatives are another Credential Manager library, or a small Expo native module of our own.
+- **The session token is stored with `expo-secure-store`** (Android Keystore), never AsyncStorage, which is unencrypted.
+- On a 401, the app treats itself as signed out.
+
+## Decision log
+
+| Decision | Alternatives | Why | Source |
+| -------- | ------------ | --- | ------ |
+| Native sign-in returns a Google ID token, which the API verifies | API-driven OAuth redirect flow with a client secret | The API never handles redirects or secrets, and the whole contract is one endpoint | [Android SIWG](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation) |
+| ID token, not access token | Access token + userinfo call | We need identity, not access to Google APIs | [OIDC Core](https://openid.net/specs/openid-connect-core-1_0.html) |
+| go-oidc for verification | Hand-rolled JWT parsing; Google's `google.golang.org/api/idtoken` | A maintained, spec-focused library; small dependency tree | [Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token) "strongly recommend[s]" a library |
+| Our own audience check: all `aud` values ∈ `GOOGLE_CLIENT_IDS` | go-oidc's single-`ClientID` "contains" check | Allows several clients, and rejects untrusted extra audiences | [OIDC Core §3.1.3.7](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation) |
+| Server-issued, single-use nonce | No nonce; stateless client-generated nonce | Blocks replay of a leaked ID token, even one leaked with its request | [OIDC Core §3.1.3.7, §15.5.2](https://openid.net/specs/openid-connect-core-1_0.html#NonceNotes) |
+| Opaque session token, hashed at rest | JWT session; Google's ID token as session | Instant revocation; a DB leak doesn't leak sessions | [OWASP Session Mgmt](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) |
+| SHA-256 for token hashes | bcrypt/argon2 | 256-bit random tokens can't be brute-forced; slow hashes are for passwords | — |
+| 90-day sliding expiry, touched at most daily | Short sessions + refresh tokens; absolute cap | Mobile users expect to stay signed in; at most one write per day | [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) (deviation noted under Sessions) |
+| `Authorization: Bearer` header | Cookie; query parameter | Standard for native clients; never in URLs | [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750) §2.1, §5.3 |
+| Identify by `sub`; no email | Email as key | `sub` is stable and never reused; less personal data held | [Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token) |
+
+## Known gaps
+
+- **No rate limiting.** In particular, `POST /auth/nonce` is unauthenticated, so a flood could grow `auth_nonces` for up to 10 minutes. This should be handled as a general API concern, at the edge or in middleware.
+- **No absolute session lifetime.** A session in continuous use never expires. Adding a cap later is a one-line change to the session lookup (`created_at > now() - <cap>`).
+- **No "sign out everywhere"** and no session listing. `sessions.id` exists so this can be added without exposing tokens.
+- **Google key-fetch failures return 401**, the same as a bad token. They're logged as warnings.
+- **Sign in with Apple** would be needed for a public App Store release. See `plan/01-data-model.md`.
+- **Account deletion** isn't implemented.
+
+## Sources
+
+- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html): ID token validation (§3.1.3.7), nonce implementation notes (§15.5.2)
+- [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252): OAuth 2.0 for Native Apps
+- [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750): Bearer token usage
+- Google: [Verify the Google ID token on your server side](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)
+- Android: [Sign in with Google via Credential Manager](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation)
+- [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)

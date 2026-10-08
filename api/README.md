@@ -19,6 +19,7 @@ brew install go golangci-lint
 Run from `api/`:
 
 ```sh
+cp .env.example .env   # then fill in GOOGLE_CLIENT_IDS
 make db-up        # start Postgres 18 in Docker
 make migrate-up   # create the tables
 make dev          # run with hot reload
@@ -53,9 +54,12 @@ make migrate-new name=<name>  # create a new SQL migration file
 
 `ENVIRONMENT` (`prod` by default, or `dev`) picks the defaults for everything else. The `make` targets that run locally (`run`, `dev`, `migrate-*`) set `ENVIRONMENT=dev`. An env var always overrides its default.
 
+In `dev`, variables that aren't set in the environment are also read from `api/.env`. To set it up, copy `.env.example`. The file is git-ignored and never read in `prod`.
+
 | Variable            | `dev` default         | `prod` default | Notes |
 | ------------------- | --------------------- | -------------- | ----- |
 | `DATABASE_URL`      | Local Compose Postgres | None: required | Used by `cmd/api` and `cmd/migrate`. |
+| `GOOGLE_CLIENT_IDS` | None: required        | None: required | Comma-separated OAuth client IDs whose Google ID tokens are accepted (the Web client ID). Only `cmd/api` needs it. See [docs/AUTH.md](../docs/AUTH.md). |
 | `PORT`              | `8080`                | `8080`         | Example: `PORT=3000 make run`. |
 | (log format)        | Coloured text         | JSON           | Not configurable separately. |
 

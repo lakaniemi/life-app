@@ -36,6 +36,9 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: postgres://lifeapp:lifeapp@postgres:5432/lifeapp?sslmode=disable
+      # Compose reads api/.env for this interpolation. If it's unset, the API
+      # exits at startup with an error naming the variable.
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
