@@ -66,9 +66,12 @@ jobs:
             echo
             echo "<details><summary>Per function</summary>"
             echo
-            echo '```'
-            go tool cover -func=coverage.out
-            echo '```'
+            echo "| File | Function | Coverage |"
+            echo "| --- | --- | ---: |"
+            # Rows look like "<module>/internal/x/y.go:12:  Func  85.7%".
+            go tool cover -func=coverage.out | awk -v prefix="$(go list -m)/" '
+              /^total:/ { next }
+              { sub(prefix, "", $1); sub(/:$/, "", $1); printf "| `%s` | `%s` | %s |\n", $1, $2, $3 }'
             echo "</details>"
             echo
             echo "HTML report: \`api-coverage\` artifact on the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
