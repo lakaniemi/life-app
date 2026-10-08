@@ -29,18 +29,14 @@ build:
 docker-build:
 	docker build -t $(IMAGE) .
 
-# Inside the container, localhost is the container itself; Docker Desktop
-# exposes the host as host.docker.internal.
 docker-run:
-	docker run --rm -p 8080:8080 \
-		-e DATABASE_URL=$(subst localhost,host.docker.internal,$(DATABASE_URL)) \
-		$(IMAGE)
+	docker compose up --build
 
 db-up:
-	docker compose up -d --wait
+	docker compose up -d --wait postgres
 
 db-down:
-	docker compose down
+	docker compose down postgres
 
 migrate-up:
 	ENVIRONMENT=dev go run ./cmd/migrate up

@@ -17,5 +17,29 @@ services:
       timeout: 5s
       retries: 15
 
+  # The API image with prod defaults (no ENVIRONMENT). migrate runs to
+  # completion before the API starts, as it would before a deploy.
+  migrate:
+    build: .
+    image: life-app-api
+    entrypoint: ["/migrate"]
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://lifeapp:lifeapp@postgres:5432/lifeapp?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    image: life-app-api
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://lifeapp:lifeapp@postgres:5432/lifeapp?sslmode=disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
