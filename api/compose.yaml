@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: lifeapp
+      POSTGRES_PASSWORD: lifeapp
+      POSTGRES_DB: lifeapp
+    ports:
+      - "5432:5432"
+    volumes:
+      # PG18 images keep data in a version-specific subdirectory of this path,
+      # so mount the parent rather than /var/lib/postgresql/data.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeapp -d lifeapp"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  pgdata:
