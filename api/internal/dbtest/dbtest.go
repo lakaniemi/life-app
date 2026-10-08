@@ -18,14 +18,15 @@ import (
 
 // New creates an empty database on the server at TEST_DATABASE_URL, applies
 // all migrations to it and returns a pool connected to it. The database is
-// dropped when the test ends. If TEST_DATABASE_URL is unset, the test is
-// skipped, so that plain `go test` works without a database.
+// dropped when the test ends. If TEST_DATABASE_URL is unset, the test fails
+// rather than skips, so a misconfigured run can't pass with tests silently
+// skipped.
 func New(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
 	serverURL := os.Getenv("TEST_DATABASE_URL")
 	if serverURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
+		t.Fatal("TEST_DATABASE_URL is not set; run tests with `make test` (after `make db-up`)")
 	}
 	ctx := t.Context()
 

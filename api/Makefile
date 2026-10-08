@@ -1,6 +1,9 @@
 IMAGE := life-app-api
+# Each test creates and drops its own database on this server, so local dev
+# data is untouched.
+TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
-.PHONY: run dev test test-db lint fmt build docker-build docker-run db-up db-down \
+.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down \
 	migrate-up migrate-down migrate-status migrate-new generate
 
 run:
@@ -10,11 +13,16 @@ dev:
 	ENVIRONMENT=dev go tool air
 
 test:
-	go test -race ./...
+	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test -race ./...
 
-# Each test creates and drops its own database, so local dev data is untouched.
-test-db:
-	TEST_DATABASE_URL='postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable' go test -race ./...
+# -coverpkg counts coverage across packages, so code exercised by endpoint
+# tests (e.g. sqlc queries) shows up as covered.
+cover:
+	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
+	go tool cover -func=coverage.out
+
+cover-html: cover
+	go tool cover -html=coverage.out
 
 lint:
 	golangci-lint run

@@ -3,13 +3,13 @@ name: api
 on:
   pull_request:
     paths:
-      - "api/**"
-      - ".github/workflows/api.yml"
+      - 'api/**'
+      - '.github/workflows/api.yml'
   push:
     branches: [main]
     paths:
-      - "api/**"
-      - ".github/workflows/api.yml"
+      - 'api/**'
+      - '.github/workflows/api.yml'
 
 permissions:
   contents: read
@@ -21,6 +21,10 @@ defaults:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For the coverage comment.
+      pull-requests: write
     services:
       # Same major version as api/compose.yaml.
       postgres:
@@ -49,6 +53,31 @@ jobs:
       - name: Check sqlc-generated code is up to date
         run: go tool sqlc diff
       - run: go build ./...
-      - run: go test -race ./...
+      # Same coverage flags as `make cover`.
+      - run: go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
         env:
           TEST_DATABASE_URL: postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
+      # Edits the bot's previous comment, so each PR keeps a single coverage
+      # comment that updates on every push.
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}')
+          {
+            echo "### API coverage: $total"
+            echo
+            echo "<details><summary>Per function</summary>"
+            echo
+            echo "| File | Function | Coverage |"
+            echo "| --- | --- | ---: |"
+            # Rows look like "<module>/internal/x/y.go:12:  Func  85.7%".
+            go tool cover -func=coverage.out | awk -v prefix="$(go list -m)/" '
+              /^total:/ { next }
+              { sub(prefix, "", $1); sub(/:$/, "", $1); printf "| `%s` | `%s` | %s |\n", $1, $2, $3 }'
+            echo "</details>"
+            echo
+            echo "To inspect coverage line-by-line, run \`make cover-html\` in \`api/\` locally."
+          } > coverage.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file coverage.md --edit-last --create-if-none
+        env:
+          GH_TOKEN: ${{ github.token }}

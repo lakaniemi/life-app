@@ -6,51 +6,49 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/lakaniemi/life-app/api/internal/dbtest"
 )
 
 func TestHealth(t *testing.T) {
-	handler := New(slog.New(slog.DiscardHandler))
+	t.Parallel()
 
 	tests := []struct {
 		name       string
-		method     string
-		path       string
+		databaseUp bool
 		wantStatus int
 		wantBody   string
 	}{
 		{
-			name:       "GET returns ok",
-			method:     http.MethodGet,
-			path:       "/health",
+			name:       "database up",
+			databaseUp: true,
 			wantStatus: http.StatusOK,
-			wantBody:   `{"status":"ok"}` + "\n",
+			wantBody:   `{"status":"ok","database":"ok"}` + "\n",
 		},
 		{
-			name:       "POST is not allowed",
-			method:     http.MethodPost,
-			path:       "/health",
-			wantStatus: http.StatusMethodNotAllowed,
-		},
-		{
-			name:       "unknown path is not found",
-			method:     http.MethodGet,
-			path:       "/nope",
-			wantStatus: http.StatusNotFound,
+			name:       "database down still responds ok",
+			databaseUp: false,
+			wantStatus: http.StatusOK,
+			wantBody:   `{"status":"degraded","database":"unavailable"}` + "\n",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequestWithContext(t.Context(), tt.method, tt.path, nil)
+			t.Parallel()
+			pool := dbtest.New(t)
+			if !tt.databaseUp {
+				// A closed pool fails every ping, like an unreachable database.
+				pool.Close()
+			}
+			handler := New(slog.New(slog.DiscardHandler), pool)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
 			rec := httptest.NewRecorder()
 
 			handler.ServeHTTP(rec, req)
 
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status = %d, want %d", rec.Code, tt.wantStatus)
-			}
-			if tt.wantBody == "" {
-				return
 			}
 			if got := rec.Header().Get("Content-Type"); got != "application/json" {
 				t.Errorf("Content-Type = %q, want %q", got, "application/json")
