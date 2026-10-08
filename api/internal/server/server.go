@@ -4,12 +4,14 @@ package server
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // New returns the API's root handler with all routes and middleware applied.
-func New(logger *slog.Logger) http.Handler {
+func New(logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger)
+	addRoutes(mux, logger, pool)
 
 	var handler http.Handler = mux
 	handler = logRequests(logger, handler)

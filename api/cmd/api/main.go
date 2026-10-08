@@ -59,7 +59,7 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	logger.Info("database connected")
 
 	srv := &http.Server{
-		Handler:           server.New(logger),
+		Handler:           server.New(logger, pool),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
