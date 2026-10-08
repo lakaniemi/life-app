@@ -3,5 +3,6 @@ bin/
 Dockerfile
 .dockerignore
 .golangci.yml
+.air.toml
 Makefile
 *.md

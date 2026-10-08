@@ -3,10 +3,13 @@
 
 IMAGE := life-app-api
 
-.PHONY: run test lint fmt build docker-build docker-run
+.PHONY: run dev test lint fmt build docker-build docker-run
 
 run:
 	ENVIRONMENT=dev go run ./cmd/api
+
+dev:
+	ENVIRONMENT=dev go tool air
 
 test:
 	go test -race ./...

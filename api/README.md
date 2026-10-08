@@ -19,6 +19,7 @@ brew install go golangci-lint
 Run from `api/`:
 
 ```sh
+make dev            # run locally with hot reload
 make run            # run locally
 make test           # run tests
 make lint           # lint
