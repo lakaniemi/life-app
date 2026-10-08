@@ -3,13 +3,13 @@ name: api
 on:
   pull_request:
     paths:
-      - "api/**"
-      - ".github/workflows/api.yml"
+      - 'api/**'
+      - '.github/workflows/api.yml'
   push:
     branches: [main]
     paths:
-      - "api/**"
-      - ".github/workflows/api.yml"
+      - 'api/**'
+      - '.github/workflows/api.yml'
 
 permissions:
   contents: read
@@ -57,9 +57,11 @@ jobs:
       - run: go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
         env:
           TEST_DATABASE_URL: postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
-      - name: Coverage report
+      # Edits the bot's previous comment, so each PR keeps a single coverage
+      # comment that updates on every push.
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
         run: |
-          go tool cover -html=coverage.out -o coverage.html
           total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}')
           {
             echo "### API coverage: $total"
@@ -74,21 +76,8 @@ jobs:
               { sub(prefix, "", $1); sub(/:$/, "", $1); printf "| `%s` | `%s` | %s |\n", $1, $2, $3 }'
             echo "</details>"
             echo
-            echo "HTML report: \`api-coverage\` artifact on the [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            echo "To inspect coverage line-by-line, run \`make cover-html\` in \`api/\` locally."
           } > coverage.md
-          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
-      # Edits the bot's previous comment, so each PR keeps a single coverage
-      # comment that updates on every push.
-      - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        run: gh pr comment "$PR_NUMBER" --body-file coverage.md --edit-last --create-if-none
+          gh pr comment ${{ github.event.pull_request.number }} --body-file coverage.md --edit-last --create-if-none
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-      - uses: actions/upload-artifact@v7
-        with:
-          name: api-coverage
-          # `uses` steps ignore defaults.run.working-directory.
-          path: |
-            api/coverage.out
-            api/coverage.html
