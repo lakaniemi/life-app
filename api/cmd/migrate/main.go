@@ -23,6 +23,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
+	"github.com/lakaniemi/life-app/api/internal/config"
 	"github.com/lakaniemi/life-app/api/internal/migrations"
 )
 
@@ -54,11 +55,11 @@ func run(ctx context.Context, args []string, getenv func(string) string) (err er
 		return goose.Create(nil, migrations.Dir, args[1], "sql")
 	}
 
-	databaseURL := getenv("DATABASE_URL")
-	if databaseURL == "" {
-		return errors.New("DATABASE_URL is not set")
+	cfg, err := config.Load(getenv)
+	if err != nil {
+		return err
 	}
-	db, err := sql.Open("pgx", databaseURL)
+	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}

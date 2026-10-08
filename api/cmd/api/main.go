@@ -2,7 +2,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	// fails in the container.
 	_ "time/tzdata"
 
+	"github.com/lakaniemi/life-app/api/internal/config"
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
 
@@ -36,19 +36,19 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	env := cmp.Or(getenv("ENVIRONMENT"), "prod")
-	logger, err := newLogger(env, stdout)
+	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err
 	}
 
-	addr := net.JoinHostPort("", cmp.Or(getenv("PORT"), "8080"))
-
-	databaseURL := getenv("DATABASE_URL")
-	if databaseURL == "" {
-		return errors.New("DATABASE_URL is not set")
+	logger, err := newLogger(cfg.LogFormat, stdout)
+	if err != nil {
+		return err
 	}
-	pool, err := newPool(ctx, databaseURL)
+
+	addr := net.JoinHostPort("", cfg.Port)
+
+	pool, err := newPool(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
