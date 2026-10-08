@@ -23,6 +23,15 @@ Get the API talking to Postgres with versioned migrations and generated queries.
   - A test helper migrates a fresh database.
   - CI gets a `services: postgres` container (same version as compose) and sets `TEST_DATABASE_URL`.
 
+## As built (differences from the scope above)
+
+- **Postgres 18.** PG19 wasn't GA yet, and managed providers top out at 18, some at 17.
+- **No goose CLI.** `cmd/migrate` wraps the goose library and backs every `make migrate-*` target, as well as the test helper. Local runs and deployment share one code path, and go.mod doesn't pick up drivers for other databases.
+- **Migrations live in `internal/migrations/`**, not `api/migrations/`, because the directory holds Go code (the embed), and `api/CLAUDE.md` keeps all non-entrypoint code under `internal/`.
+- **sqlc is a `go tool`**, so local and CI versions match. Generated files embed the version, and `sqlc diff` compares them.
+- **`server.New` is unchanged.** A pool parameter that nothing uses would fail lint (`unused-parameter`), so phase 2 wires it in with the first handler that queries the DB. `cmd/api` already creates, pings and closes the pool.
+- **Queries:** only `CreateUser` and `GetUserByGoogleSub` (phase 2 needs both).
+
 ## Teaching focus
 
 - `database/sql` vs pgx, and why to use pgx directly for a Postgres-only service.

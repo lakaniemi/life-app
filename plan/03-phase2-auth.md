@@ -23,6 +23,7 @@ App ── Authorization: Bearer <token> ──> every later request
 
 ## Scope
 
+- **Wiring (carried over from phase 1):** `server.New` takes the `*db.Queries` and the pool (for transactions) from `cmd/api`.
 - **Migration:** add the `sessions` table.
 - **Token verification:** `github.com/coreos/go-oidc/v3`, behind a small interface so tests can fake it.
 - **Sessions:**
