@@ -30,8 +30,7 @@ curl -i localhost:8080/health
 ```sh
 make dev            # run locally with hot reload
 make run            # run locally
-make test           # run tests; database tests skip
-make test-db        # run tests including database tests (needs make db-up)
+make test           # run tests (needs make db-up)
 make lint           # lint
 make fmt            # format
 make generate       # regenerate Go code from SQL queries (sqlc)
@@ -58,7 +57,7 @@ make migrate-new name=<name>  # create a new SQL migration file
 | `PORT`              | `8080`                | `8080`         | Example: `PORT=3000 make run`. |
 | (log format)        | Coloured text         | JSON           | Not configurable separately. |
 
-`TEST_DATABASE_URL` points the database tests at a Postgres server; without it they skip. Each test creates and drops its own database there. `make test-db` sets it to local Postgres.
+`TEST_DATABASE_URL` points the database tests at a Postgres server; without it they fail. Each test creates and drops its own database there. `make test` defaults it to local Postgres.
 
 ## Database
 
