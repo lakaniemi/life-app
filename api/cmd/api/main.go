@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -19,8 +18,6 @@ import (
 	// runtime image has no /usr/share/zoneinfo, so without this
 	// time.LoadLocation would fail in the container.
 	_ "time/tzdata"
-
-	"github.com/lmittmann/tint"
 
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
@@ -94,17 +91,4 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	}
 	logger.Info("server stopped")
 	return nil
-}
-
-// newLogger returns a JSON logger for production (Cloud Logging parses it)
-// and a coloured, human-readable one for local development.
-func newLogger(env string, w io.Writer) (*slog.Logger, error) {
-	switch env {
-	case "prod":
-		return slog.New(slog.NewJSONHandler(w, nil)), nil
-	case "dev":
-		return slog.New(tint.NewTextHandler(w, &tint.Options{TimeFormat: time.TimeOnly})), nil
-	default:
-		return nil, fmt.Errorf("unknown ENVIRONMENT %q (want \"prod\" or \"dev\")", env)
-	}
 }
