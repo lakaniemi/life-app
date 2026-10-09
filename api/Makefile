@@ -3,7 +3,7 @@ IMAGE := life-app-api
 # data is untouched.
 TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
-.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down \
+.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down psql \
 	migrate-up migrate-down migrate-status migrate-new generate dev-session
 
 run:
@@ -44,6 +44,10 @@ db-up:
 
 db-down:
 	docker compose down postgres
+
+# Runs psql inside the container, so no local install is needed.
+psql:
+	docker compose exec postgres psql -U lifeapp -d lifeapp
 
 migrate-up:
 	ENVIRONMENT=dev go run ./cmd/migrate up

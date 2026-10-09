@@ -43,6 +43,7 @@ make docker-run     # run the image like prod: Postgres, migrations, then the AP
 
 make db-up          # start local Postgres
 make db-down        # stop it; data is kept in a Docker volume
+make psql           # open psql on the local database (runs inside the container)
 
 make migrate-up               # apply pending migrations
 make migrate-down             # roll back the latest migration
