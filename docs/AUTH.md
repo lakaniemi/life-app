@@ -119,6 +119,12 @@ Two tables (`api/internal/migrations/00002_auth.sql`):
 - **The session token is stored with `expo-secure-store`** (Android Keystore), never AsyncStorage, which is unencrypted.
 - On a 401, the app treats itself as signed out.
 
+## Local development sessions
+
+`make dev-session name=<name>` (`api/cmd/devsession`) creates a real session for a dev user with the Google sub `dev:<name>`, skipping Google. It calls `auth.Service.StartSession`, the same code real login runs after verifying the token and nonce.
+
+It's a separate command that writes to the database directly, deliberately not a dev-only login route. A route would be compiled into the production binary, so a single wrong config value would let anyone sign in as anyone. The command isn't in the container image, and running it needs database credentials, which already allow anything.
+
 ## Decision log
 
 | Decision | Alternatives | Why | Source |

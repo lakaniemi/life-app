@@ -43,16 +43,31 @@ make docker-run     # run the image like prod: Postgres, migrations, then the AP
 
 make db-up          # start local Postgres
 make db-down        # stop it; data is kept in a Docker volume
+make psql           # open psql on the local database (runs inside the container)
 
 make migrate-up               # apply pending migrations
 make migrate-down             # roll back the latest migration
 make migrate-status           # list migrations and whether each is applied
 make migrate-new name=<name>  # create a new SQL migration file
+
+make dev-session name=<name>  # print a session token for a local dev user (see below)
 ```
+
+## Calling authenticated endpoints locally
+
+`make dev-session` signs in as a local dev user without Google. It finds or creates the user (Google sub `dev:<name>`), starts a real session and prints the token. Use several names to test as several users:
+
+```sh
+ALICE=$(make -s dev-session name=Alice)
+BOB=$(make -s dev-session name=Bob)
+curl localhost:8080/me -H "Authorization: Bearer $ALICE"
+```
+
+It writes to the database in `DATABASE_URL` directly (`cmd/devsession`), and it's not part of the API or the container image, so it adds no way to sign in over HTTP. To test the real Google flow, see "Testing sign-in manually" below.
 
 ## Configuration
 
-`ENVIRONMENT` (`prod` by default, or `dev`) picks the defaults for everything else. The `make` targets that run locally (`run`, `dev`, `migrate-*`) set `ENVIRONMENT=dev`. An env var always overrides its default.
+`ENVIRONMENT` (`prod` by default, or `dev`) picks the defaults for everything else. The `make` targets that run locally (`run`, `dev`, `migrate-*`, `dev-session`) set `ENVIRONMENT=dev`. An env var always overrides its default.
 
 Variables can also go in `api/.env` (copy `.env.example`). Variables that are already set in the environment take precedence over the file. It's git-ignored and excluded from the container image, so deployments use their real environment.
 

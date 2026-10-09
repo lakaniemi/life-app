@@ -3,8 +3,8 @@ IMAGE := life-app-api
 # data is untouched.
 TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
-.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down \
-	migrate-up migrate-down migrate-status migrate-new generate
+.PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down psql \
+	migrate-up migrate-down migrate-status migrate-new generate dev-session
 
 run:
 	ENVIRONMENT=dev go run ./cmd/api
@@ -45,6 +45,10 @@ db-up:
 db-down:
 	docker compose down postgres
 
+# Runs psql inside the container, so no local install is needed.
+psql:
+	docker compose exec postgres psql -U lifeapp -d lifeapp
+
 migrate-up:
 	ENVIRONMENT=dev go run ./cmd/migrate up
 
@@ -60,3 +64,9 @@ migrate-new:
 
 generate:
 	go tool sqlc generate
+
+# Prints a session token for dev user $(name), creating the user if needed.
+# Use -s to capture it: TOKEN=$$(make -s dev-session name=Alice)
+dev-session:
+	@test -n "$(name)" || (echo "usage: make dev-session name=<name>" >&2 && exit 1)
+	@ENVIRONMENT=dev go run ./cmd/devsession -name '$(name)'

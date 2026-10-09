@@ -36,6 +36,14 @@ func (s *Service) LoginWithGoogle(ctx context.Context, idToken string) (string, 
 		return "", db.User{}, fmt.Errorf("consume nonce: %w", err)
 	}
 
+	return s.StartSession(ctx, identity)
+}
+
+// StartSession signs in the user with identity's Google sub, creating them on
+// first login, and returns a new session token and the user. It trusts
+// identity as given: LoginWithGoogle calls it only after verifying the token
+// and nonce, and cmd/devsession calls it for local development users.
+func (s *Service) StartSession(ctx context.Context, identity google.Identity) (string, db.User, error) {
 	user, err := s.findOrCreateUser(ctx, identity)
 	if err != nil {
 		return "", db.User{}, err
