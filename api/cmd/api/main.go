@@ -28,26 +28,17 @@ const shutdownTimeout = 8 * time.Second
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
+	if err := run(ctx, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, getenv func(string) string, stdout io.Writer) error {
+func run(ctx context.Context, stdout io.Writer) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Decided by the real environment, not the file, so a stray .env can never
-	// switch a deployment to dev.
-	if getenv("ENVIRONMENT") == "dev" {
-		var err error
-		if getenv, err = config.WithDotEnv(getenv, ".env"); err != nil {
-			return err
-		}
-	}
-
-	cfg, err := config.Load(getenv)
+	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}

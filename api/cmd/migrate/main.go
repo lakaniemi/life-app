@@ -31,14 +31,14 @@ const usage = "usage: migrate up | down | status | create <name>"
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Args[1:], os.Getenv); err != nil {
+	if err := run(ctx, os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
 // err is a named result so the deferred db.Close can add its error to it.
-func run(ctx context.Context, args []string, getenv func(string) string) (err error) {
+func run(ctx context.Context, args []string) (err error) {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -55,15 +55,7 @@ func run(ctx context.Context, args []string, getenv func(string) string) (err er
 		return goose.Create(nil, migrations.Dir, args[1], "sql")
 	}
 
-	// Decided by the real environment, not the file, so a stray .env can never
-	// switch a deployment to dev.
-	if getenv("ENVIRONMENT") == "dev" {
-		if getenv, err = config.WithDotEnv(getenv, ".env"); err != nil {
-			return err
-		}
-	}
-
-	cfg, err := config.Load(getenv)
+	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}

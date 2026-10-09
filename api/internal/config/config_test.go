@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestLoad(t *testing.T) {
+func TestFromEnv(t *testing.T) {
 	tests := []struct {
 		name    string
 		env     map[string]string
@@ -53,19 +54,20 @@ func TestLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			getenv := func(key string) string { return tt.env[key] }
 
-			got, err := Load(getenv)
+			got, err := fromEnv(getenv)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Load() = %+v, want error", got)
+					t.Errorf("fromEnv() = %+v, want error", got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("Load() error = %v", err)
+				t.Fatalf("fromEnv() error = %v", err)
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Load() mismatch (-want +got):\n%s", diff)
+			// EquateEmpty: an unset list may come back nil or empty; both mean none.
+			if diff := cmp.Diff(tt.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("fromEnv() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -6,7 +6,14 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"io/fs"
+	"maps"
+	"os"
+	"slices"
 	"strings"
+	"unicode"
+
+	"github.com/joho/godotenv"
 )
 
 // LogFormat selects how log lines are written.
@@ -21,8 +28,26 @@ const (
 // localDatabaseURL points at the Postgres in compose.yaml.
 const localDatabaseURL = "postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable" //nolint:gosec // local-only dev credentials, same as compose.yaml
 
+// defaultEnvironment is used when ENVIRONMENT is unset.
+const defaultEnvironment = "prod"
+
+// defaults holds each environment's settings; environment variables override
+// them. ENVIRONMENT picks the entry. An empty field has no default, and
+// fromEnv says which of those are required.
+var defaults = map[string]Config{
+	"prod": {
+		LogFormat: LogFormatJSON,
+		Port:      "8080",
+	},
+	"dev": {
+		LogFormat:   LogFormatPretty,
+		Port:        "8080",
+		DatabaseURL: localDatabaseURL,
+	},
+}
+
 // Config holds concrete settings. It deliberately has no environment name, so
-// code can't branch on "are we in dev?"; ENVIRONMENT only picks defaults here.
+// code can't branch on "are we in dev?"; ENVIRONMENT only picks defaults.
 type Config struct {
 	LogFormat   LogFormat
 	Port        string
@@ -32,25 +57,32 @@ type Config struct {
 	GoogleClientIDs []string
 }
 
-// Load reads configuration through getenv (os.Getenv outside tests). prod has
-// no default DATABASE_URL, so it's required there. GOOGLE_CLIENT_IDS has no
-// default anywhere, but only the API server requires it, so it's validated
-// where it's used (google.New), not here.
-func Load(getenv func(string) string) (Config, error) {
-	var defaults Config
-	switch env := cmp.Or(getenv("ENVIRONMENT"), "prod"); env {
-	case "prod":
-		defaults = Config{LogFormat: LogFormatJSON, Port: "8080"}
-	case "dev":
-		defaults = Config{LogFormat: LogFormatPretty, Port: "8080", DatabaseURL: localDatabaseURL}
-	default:
-		return Config{}, fmt.Errorf("unknown ENVIRONMENT %q (want \"prod\" or \"dev\")", env)
+// Load reads configuration from the environment. Variables in a .env file in
+// the working directory are added first, without overriding ones that are
+// already set; the file is optional. Keep .env out of container images
+// (.dockerignore), so deployments only use their real environment.
+func Load() (Config, error) {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return Config{}, fmt.Errorf("load .env: %w", err)
+	}
+	return fromEnv(os.Getenv)
+}
+
+// fromEnv builds the Config from getenv, so tests can pass a map instead of
+// the real environment. prod has no default DATABASE_URL, so it's required
+// there. GOOGLE_CLIENT_IDS has no default anywhere, but only the API server
+// requires it, so it's validated where it's used (google.New), not here.
+func fromEnv(getenv func(string) string) (Config, error) {
+	env := cmp.Or(getenv("ENVIRONMENT"), defaultEnvironment)
+	d, ok := defaults[env]
+	if !ok {
+		return Config{}, fmt.Errorf("unknown ENVIRONMENT %q (want one of %q)", env, slices.Sorted(maps.Keys(defaults)))
 	}
 
 	cfg := Config{
-		LogFormat:       defaults.LogFormat,
-		Port:            cmp.Or(getenv("PORT"), defaults.Port),
-		DatabaseURL:     cmp.Or(getenv("DATABASE_URL"), defaults.DatabaseURL),
+		LogFormat:       d.LogFormat,
+		Port:            cmp.Or(getenv("PORT"), d.Port),
+		DatabaseURL:     cmp.Or(getenv("DATABASE_URL"), d.DatabaseURL),
 		GoogleClientIDs: splitList(getenv("GOOGLE_CLIENT_IDS")),
 	}
 	if cfg.DatabaseURL == "" {
@@ -59,13 +91,8 @@ func Load(getenv func(string) string) (Config, error) {
 	return cfg, nil
 }
 
-// splitList parses a comma-separated list, ignoring whitespace and empty items.
+// splitList parses a comma-separated list. Whitespace also separates items,
+// and empty items are dropped.
 func splitList(s string) []string {
-	var items []string
-	for item := range strings.SplitSeq(s, ",") {
-		if item = strings.TrimSpace(item); item != "" {
-			items = append(items, item)
-		}
-	}
-	return items
+	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
 }

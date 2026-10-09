@@ -54,7 +54,7 @@ make migrate-new name=<name>  # create a new SQL migration file
 
 `ENVIRONMENT` (`prod` by default, or `dev`) picks the defaults for everything else. The `make` targets that run locally (`run`, `dev`, `migrate-*`) set `ENVIRONMENT=dev`. An env var always overrides its default.
 
-In `dev`, variables that aren't set in the environment are also read from `api/.env`. To set it up, copy `.env.example`. The file is git-ignored and never read in `prod`.
+Variables can also go in `api/.env` (copy `.env.example`). Variables that are already set in the environment take precedence over the file. It's git-ignored and excluded from the container image, so deployments use their real environment.
 
 | Variable            | `dev` default         | `prod` default | Notes |
 | ------------------- | --------------------- | -------------- | ----- |

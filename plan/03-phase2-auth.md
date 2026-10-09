@@ -46,7 +46,7 @@ The full design, with its reasons and sources, is in `docs/AUTH.md`.
 - **The audience check is ours:** go-oidc runs with `SkipClientIDCheck`, then we require every `aud` to be in `GOOGLE_CLIENT_IDS`.
 - **`server.New(logger, pool, verifier)`** builds `db.New(pool)` itself instead of taking both.
 - **Auth logic lives in `internal/auth`**, not in the handlers: an `auth.Service` with sentinel errors, and no HTTP code. `internal/server` keeps only routes, handlers and middleware. See the layout rule in `api/CLAUDE.md`.
-- **`GOOGLE_CLIENT_IDS` is required by `google.New`**, not by `config.Load`, so `cmd/migrate` doesn't need it. In dev, it can come from `api/.env`, through `config.WithDotEnv`.
+- **`GOOGLE_CLIENT_IDS` is required by `google.New`**, not by `config.Load`, so `cmd/migrate` doesn't need it. It can come from `api/.env`, which `config.Load()` reads with godotenv in any environment, without overriding variables that are already set.
 - **Manual Playground test is pending** until the Google Cloud consent screen and Web client exist. The Playground can't obviously set a nonce, so the recipe needs working out then.
 
 ## Teaching focus
