@@ -47,7 +47,8 @@ type Service struct {
 
 // NewService returns a Service that stores state through queries and
 // verifies Google ID tokens with verifier. logger receives failures that
-// don't fail the operation, such as cleanup errors.
+// don't fail the operation, such as cleanup errors. verifier may be nil if
+// LoginWithGoogle is never called.
 func NewService(logger *slog.Logger, queries *db.Queries, verifier TokenVerifier) *Service {
 	return &Service{logger: logger, queries: queries, verifier: verifier}
 }
