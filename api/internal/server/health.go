@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -34,9 +33,6 @@ func handleHealth(logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
 			resp = healthResponse{Status: "degraded", Database: "unavailable"}
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			logger.ErrorContext(r.Context(), "encode health response", "err", err)
-		}
+		writeJSON(w, r, logger, http.StatusOK, resp)
 	})
 }

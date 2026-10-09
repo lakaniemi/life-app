@@ -1,8 +1,13 @@
 package config
 
-import "testing"
+import (
+	"testing"
 
-func TestLoad(t *testing.T) {
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+)
+
+func TestFromEnv(t *testing.T) {
 	tests := []struct {
 		name    string
 		env     map[string]string
@@ -38,25 +43,31 @@ func TestLoad(t *testing.T) {
 			env:     map[string]string{"ENVIRONMENT": "staging", "DATABASE_URL": "postgres://x"},
 			wantErr: true,
 		},
+		{
+			name: "client ID list is trimmed and skips empty items",
+			env:  map[string]string{"ENVIRONMENT": "dev", "GOOGLE_CLIENT_IDS": " web , ,ios,"},
+			want: Config{LogFormat: LogFormatPretty, Port: "8080", DatabaseURL: localDatabaseURL, GoogleClientIDs: []string{"web", "ios"}},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			getenv := func(key string) string { return tt.env[key] }
 
-			got, err := Load(getenv)
+			got, err := fromEnv(getenv)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Load() = %+v, want error", got)
+					t.Errorf("fromEnv() = %+v, want error", got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("Load() error = %v", err)
+				t.Fatalf("fromEnv() error = %v", err)
 			}
-			if got != tt.want {
-				t.Errorf("Load() = %+v, want %+v", got, tt.want)
+			// EquateEmpty: an unset list may come back nil or empty; both mean none.
+			if diff := cmp.Diff(tt.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("fromEnv() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

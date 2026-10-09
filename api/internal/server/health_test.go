@@ -41,7 +41,7 @@ func TestHealth(t *testing.T) {
 				// A closed pool fails every ping, like an unreachable database.
 				pool.Close()
 			}
-			handler := New(slog.New(slog.DiscardHandler), pool)
+			handler := New(slog.New(slog.DiscardHandler), pool, fakeVerifier{})
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
 			rec := httptest.NewRecorder()
 

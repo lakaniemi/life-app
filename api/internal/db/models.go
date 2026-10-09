@@ -10,6 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
+type AuthNonce struct {
+	Nonce     string
+	ExpiresAt time.Time
+}
+
 type Family struct {
 	ID        uuid.UUID
 	Name      string
@@ -22,6 +27,15 @@ type FamilyMember struct {
 	UserID   uuid.UUID
 	Role     string
 	JoinedAt time.Time
+}
+
+type Session struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	TokenHash  []byte
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
+	LastUsedAt time.Time
 }
 
 type User struct {

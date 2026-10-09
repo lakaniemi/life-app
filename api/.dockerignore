@@ -6,3 +6,4 @@ Dockerfile
 .air.toml
 Makefile
 *.md
+.env*

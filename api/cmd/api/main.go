@@ -17,6 +17,7 @@ import (
 	// fails in the container.
 	_ "time/tzdata"
 
+	"github.com/lakaniemi/life-app/api/internal/auth/google"
 	"github.com/lakaniemi/life-app/api/internal/config"
 	"github.com/lakaniemi/life-app/api/internal/server"
 )
@@ -27,17 +28,17 @@ const shutdownTimeout = 8 * time.Second
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
+	if err := run(ctx, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, getenv func(string) string, stdout io.Writer) error {
+func run(ctx context.Context, stdout io.Writer) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	cfg, err := config.Load(getenv)
+	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
@@ -58,8 +59,13 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer) erro
 	defer pool.Close()
 	logger.Info("database connected")
 
+	verifier, err := google.New(ctx, cfg.GoogleClientIDs)
+	if err != nil {
+		return err
+	}
+
 	srv := &http.Server{
-		Handler:           server.New(logger, pool),
+		Handler:           server.New(logger, pool, verifier),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,

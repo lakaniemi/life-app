@@ -4,14 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/lakaniemi/life-app/api/internal/dbtest"
 )
-
-// Postgres error code for unique_violation.
-const uniqueViolation = "23505"
 
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
@@ -30,7 +28,7 @@ func TestCreateUser(t *testing.T) {
 
 	_, err = q.CreateUser(t.Context(), CreateUserParams{GoogleSub: "sub-1", Name: "Someone else"})
 	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || pgErr.Code != uniqueViolation {
+	if !errors.As(err, &pgErr) || pgErr.Code != pgerrcode.UniqueViolation {
 		t.Errorf("duplicate google_sub: err = %v, want unique violation", err)
 	}
 }

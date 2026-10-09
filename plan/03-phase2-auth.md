@@ -38,6 +38,17 @@ App ── Authorization: Bearer <token> ──> every later request
   - `PATCH /me` `{name}`
 - **Config:** `GOOGLE_CLIENT_IDS`, a comma-separated list of allowed audiences, read in `cmd/api`.
 
+## As built (differences from the scope above)
+
+The full design, with its reasons and sources, is in `docs/AUTH.md`.
+
+- **Nonce added:** `POST /auth/nonce` issues a single-use nonce (10 min). `POST /auth/google` requires the token's `nonce` to be one of ours, and consumes it. A new `auth_nonces` table goes in the same migration as `sessions`.
+- **The audience check is ours:** go-oidc runs with `SkipClientIDCheck`, then we require every `aud` to be in `GOOGLE_CLIENT_IDS`.
+- **`server.New(logger, pool, verifier)`** builds `db.New(pool)` itself instead of taking both.
+- **Auth logic lives in `internal/auth`**, not in the handlers: an `auth.Service` with sentinel errors, and no HTTP code. `internal/server` keeps only routes, handlers and middleware. See the layout rule in `api/CLAUDE.md`.
+- **`GOOGLE_CLIENT_IDS` is required by `google.New`**, not by `config.Load`, so `cmd/migrate` doesn't need it. It can come from `api/.env`, which `config.Load()` reads with godotenv in any environment, without overriding variables that are already set.
+- **The manual test uses the authorization code flow, not the OAuth Playground**, because the Playground can't set a custom nonce. A hand-built authorization URL carries our nonce, and curl exchanges the code for an ID token. It passed on 2026-10-09; the recipe is in `api/README.md`, "Testing sign-in manually".
+
 ## Teaching focus
 
 - ID token vs access token: the API needs the *identity* (ID token), not access to Google APIs (access token).
@@ -48,5 +59,5 @@ App ── Authorization: Bearer <token> ──> every later request
 ## Done when
 
 - Handler tests cover valid, invalid and expired tokens, a missing Bearer header, and logout.
-- A Playground-issued ID token logs in against the local API.
+- A real Google ID token logs in against the local API (done via the code flow; see "As built").
 - The root `CLAUDE.md` "Auth" row is filled in.
