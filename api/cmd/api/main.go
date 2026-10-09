@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -70,6 +71,9 @@ func run(ctx context.Context, stdout io.Writer) error {
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
+		// Without this, the server's own errors (e.g. recovered handler
+		// panics) go to the standard log package, bypassing our log format.
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	var lc net.ListenConfig
