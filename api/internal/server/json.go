@@ -40,7 +40,6 @@ func writeInternalError(w http.ResponseWriter, r *http.Request, logger *slog.Log
 	writeError(w, r, logger, http.StatusInternalServerError, "internal", "internal server error")
 }
 
-// decodeJSON decodes the request body into v, capping its size.
 func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {

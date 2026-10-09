@@ -34,10 +34,9 @@ func (f fakeVerifier) Verify(_ context.Context, rawIDToken string) (google.Ident
 }
 
 type testServer struct {
-	handler http.Handler
-	queries *db.Queries
-	pool    *pgxpool.Pool
-	// googleTokens are the ID tokens the fake Google verifier accepts.
+	handler      http.Handler
+	queries      *db.Queries
+	pool         *pgxpool.Pool
 	googleTokens fakeVerifier
 }
 
@@ -102,7 +101,6 @@ func (s testServer) seedSession(t *testing.T, user db.User, expiresAt time.Time)
 	return session, token
 }
 
-// decode decodes a JSON response body into a T.
 func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	t.Helper()
 	var v T

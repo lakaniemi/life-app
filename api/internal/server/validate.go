@@ -29,8 +29,6 @@ func newValidator() *validator.Validate {
 	return v
 }
 
-// fieldError says which request field failed which rule, e.g. "name" and
-// "required".
 type fieldError struct {
 	Field string `json:"field"`
 	Rule  string `json:"rule"`

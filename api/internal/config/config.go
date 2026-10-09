@@ -28,7 +28,6 @@ const (
 // localDatabaseURL points at the Postgres in compose.yaml.
 const localDatabaseURL = "postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable" //nolint:gosec // local-only dev credentials, same as compose.yaml
 
-// defaultEnvironment is used when ENVIRONMENT is unset.
 const defaultEnvironment = "prod"
 
 // defaults holds each environment's settings; environment variables override
@@ -91,8 +90,6 @@ func fromEnv(getenv func(string) string) (Config, error) {
 	return cfg, nil
 }
 
-// splitList parses a comma-separated list. Whitespace also separates items,
-// and empty items are dropped.
 func splitList(s string) []string {
 	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
 }

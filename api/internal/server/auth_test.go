@@ -12,7 +12,6 @@ import (
 	"github.com/lakaniemi/life-app/api/internal/db"
 )
 
-// newNonce gets a nonce the way the app does.
 func (s testServer) newNonce(t *testing.T) string {
 	t.Helper()
 	rec := s.do(t, http.MethodPost, "/auth/nonce", "", nil)
@@ -94,8 +93,7 @@ func TestGoogleLoginRejects(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		// idToken returns the ID token to log in with.
+		name    string
 		idToken func(t *testing.T, s testServer) string
 	}{
 		{
