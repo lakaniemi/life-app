@@ -100,7 +100,7 @@ In the API, `internal/auth` holds this logic, with no HTTP code: nonces, `LoginW
 
 Two tables (`api/internal/migrations/00002_auth.sql`):
 
-- **`sessions`** stores the SHA-256 of each session token, never the token itself. A database leak then doesn't hand out working sessions. A fast hash is enough because the token is 32 random bytes, so there's nothing to brute-force. Slow hashes such as bcrypt exist for guessable passwords. `id` is separate from `token_hash`, so a session can be referred to (e.g. on logout) without the secret.
+- **`sessions`** stores the SHA-256 of each session token, never the token itself. It's kept as raw `bytea`, with a check that it's exactly 32 bytes. That makes it half the size of hex text, with no encoding step that one side could forget, and comparisons are plain byte comparisons rather than collation-aware text ones. A database leak then doesn't hand out working sessions. A fast hash is enough because the token is 32 random bytes, so there's nothing to brute-force. Slow hashes such as bcrypt exist for guessable passwords. `id` is separate from `token_hash`, so a session can be referred to (e.g. on logout) without the secret.
 - **`auth_nonces`** stores nonces in plain text. A nonce isn't a credential: on its own it's useless without a Google-signed ID token that contains it, and it travels inside that token anyway. The `expires_at` index serves the cleanup of expired rows.
 
 ## Identity and privacy

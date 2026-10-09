@@ -2,7 +2,8 @@
 CREATE TABLE sessions (
     id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       uuid NOT NULL REFERENCES users ON DELETE CASCADE,
-    token_hash    bytea NOT NULL UNIQUE,
+    -- SHA-256 of the session token (32 bytes); the token itself is never stored.
+    token_hash    bytea NOT NULL UNIQUE CHECK (octet_length(token_hash) = 32),
     created_at    timestamptz NOT NULL DEFAULT now(),
     expires_at    timestamptz NOT NULL,
     last_used_at  timestamptz NOT NULL DEFAULT now()
