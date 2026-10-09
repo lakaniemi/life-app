@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/lakaniemi/life-app/api/internal/auth/google"
 	"github.com/lakaniemi/life-app/api/internal/db"
 )
-
-// Postgres error code for unique_violation.
-const pgUniqueViolation = "23505"
 
 // LoginWithGoogle exchanges a Google ID token for a new session, creating the
 // user on first login. It returns the session token and the user.
@@ -69,7 +67,7 @@ func (s *Service) findOrCreateUser(ctx context.Context, identity google.Identity
 
 	user, err = s.queries.CreateUser(ctx, db.CreateUserParams{GoogleSub: identity.Subject, Name: identity.Name})
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		// A concurrent first login created the user between our get and
 		// create; theirs won, so use it.
 		user, err = s.queries.GetUserByGoogleSub(ctx, identity.Subject)
