@@ -18,6 +18,8 @@ type errorResponse struct {
 type errorBody struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+	// Fields lists the failing fields of a request that failed validation.
+	Fields []fieldError `json:"fields,omitempty"`
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, logger *slog.Logger, status int, v any) {

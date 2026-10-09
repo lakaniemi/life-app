@@ -24,7 +24,7 @@ func handleCreateNonce(logger *slog.Logger, authService *auth.Service) http.Hand
 }
 
 type googleLoginRequest struct {
-	IDToken string `json:"idToken"`
+	IDToken string `json:"idToken" validate:"required"`
 }
 
 type googleLoginResponse struct {
@@ -39,8 +39,7 @@ func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) http.Hand
 			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", err.Error())
 			return
 		}
-		if req.IDToken == "" {
-			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", "idToken is required")
+		if !validateRequest(w, r, logger, req) {
 			return
 		}
 

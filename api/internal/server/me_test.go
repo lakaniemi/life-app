@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -48,17 +49,46 @@ func TestPatchMe(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects invalid input", func(t *testing.T) {
+	t.Run("rejects invalid names with the failing field", func(t *testing.T) {
 		t.Parallel()
 		s := newTestServer(t)
 		_, _, token := s.seedUser(t, "Alice")
 
-		for _, body := range []any{
-			map[string]any{"name": "   "},
-			"not an object",
-		} {
-			checkStatus(t, s.do(t, http.MethodPatch, "/me", token, body), http.StatusBadRequest)
+		tests := []struct {
+			name     string
+			wantRule string
+		}{
+			{name: "   ", wantRule: "required"},
+			{name: strings.Repeat("ä", 101), wantRule: "max"},
 		}
+		for _, tt := range tests {
+			rec := s.do(t, http.MethodPatch, "/me", token, map[string]any{"name": tt.name})
+
+			checkStatus(t, rec, http.StatusBadRequest)
+			want := []fieldError{{Field: "name", Rule: tt.wantRule}}
+			if diff := cmp.Diff(want, decode[errorResponse](t, rec).Error.Fields); diff != "" {
+				t.Errorf("name %q: fields mismatch (-want +got):\n%s", tt.name, diff)
+			}
+		}
+	})
+
+	t.Run("length counts characters, not bytes", func(t *testing.T) {
+		t.Parallel()
+		s := newTestServer(t)
+		_, _, token := s.seedUser(t, "Alice")
+
+		// 100 characters, 200 bytes in UTF-8.
+		rec := s.do(t, http.MethodPatch, "/me", token, map[string]any{"name": strings.Repeat("ä", 100)})
+
+		checkStatus(t, rec, http.StatusOK)
+	})
+
+	t.Run("rejects a malformed body", func(t *testing.T) {
+		t.Parallel()
+		s := newTestServer(t)
+		_, _, token := s.seedUser(t, "Alice")
+
+		checkStatus(t, s.do(t, http.MethodPatch, "/me", token, "not an object"), http.StatusBadRequest)
 	})
 
 	t.Run("requires auth", func(t *testing.T) {

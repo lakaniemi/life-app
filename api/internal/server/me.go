@@ -4,14 +4,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 
 	"github.com/lakaniemi/life-app/api/internal/db"
 )
-
-const maxNameLength = 100
 
 // userResponse is the public view of a user. db.User isn't serialized
 // directly, so internal fields like google_sub can't leak into responses.
@@ -48,7 +45,7 @@ func handleGetMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 }
 
 type patchMeRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required,max=100"`
 }
 
 type patchMeResponse struct {
@@ -62,15 +59,15 @@ func handlePatchMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", err.Error())
 			return
 		}
-		name := strings.TrimSpace(req.Name)
-		if name == "" || utf8.RuneCountInString(name) > maxNameLength {
-			writeError(w, r, logger, http.StatusBadRequest, "invalid_name", "name must be 1-100 characters")
+		// Trimmed before validating, so a blank name fails "required".
+		req.Name = strings.TrimSpace(req.Name)
+		if !validateRequest(w, r, logger, req) {
 			return
 		}
 
 		user, err := queries.UpdateUserName(r.Context(), db.UpdateUserNameParams{
 			ID:   sessionFrom(r.Context()).UserID,
-			Name: name,
+			Name: req.Name,
 		})
 		if err != nil {
 			writeInternalError(w, r, logger, err)
