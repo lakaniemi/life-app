@@ -21,7 +21,7 @@ func newUserResponse(u db.User) userResponse {
 	return userResponse{ID: u.ID, Name: u.Name}
 }
 
-// familyResponse is filled in by the families endpoints (phase 3).
+// familyResponse is filled in by the families endpoints.
 type familyResponse struct{}
 
 type meResponse struct {

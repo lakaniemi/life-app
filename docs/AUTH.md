@@ -110,7 +110,7 @@ Two tables (`api/internal/migrations/00002_auth.sql`):
 - **`name`** is copied from the token on first login only. After that it belongs to the user (`PATCH /me`), and later logins never overwrite it. A token without a name (no `profile` scope) creates the user with an empty name.
 - Responses use dedicated structs (`userResponse`), so internal columns such as `google_sub` can't leak into JSON.
 
-## App side (phase 5)
+## App side
 
 *To be completed when the app's sign-in is built.*
 
@@ -146,7 +146,7 @@ It's a separate command that writes to the database directly, deliberately not a
 - **No absolute session lifetime.** A session in continuous use never expires. Adding a cap later is a one-line change to the session lookup (`created_at > now() - <cap>`).
 - **No "sign out everywhere"** and no session listing. `sessions.id` exists so this can be added without exposing tokens.
 - **Google key-fetch failures return 401**, the same as a bad token. They're logged as warnings.
-- **Sign in with Apple** would be needed for a public App Store release. See `plan/01-data-model.md`.
+- **Sign in with Apple** would be needed for a public App Store release. The schema change is small: make `google_sub` nullable, add `apple_sub`, and require one of them with a `CHECK`.
 - **Account deletion** isn't implemented.
 
 ## Sources
