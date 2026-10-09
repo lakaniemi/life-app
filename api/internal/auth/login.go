@@ -43,8 +43,10 @@ func (s *Service) LoginWithGoogle(ctx context.Context, idToken string) (string, 
 		return "", db.User{}, err
 	}
 
+	// Cleanup only: expired sessions are rejected anyway, and the next login
+	// tries again.
 	if err := s.queries.DeleteExpiredSessionsForUser(ctx, user.ID); err != nil {
-		return "", db.User{}, fmt.Errorf("delete expired sessions: %w", err)
+		s.logger.WarnContext(ctx, "delete expired sessions", "err", err, "user_id", user.ID)
 	}
 	token, err := s.createSession(ctx, user)
 	if err != nil {

@@ -11,9 +11,11 @@ import (
 // NewNonce issues a single-use nonce for the app to pass to Google sign-in,
 // which embeds it in the ID token.
 func (s *Service) NewNonce(ctx context.Context) (string, error) {
-	// Cleaning up here keeps the table bounded without a background job.
+	// Cleaning up here keeps the table bounded without a background job. A
+	// failure isn't the caller's problem: the next call tries again, and
+	// expired nonces are rejected anyway.
 	if err := s.queries.DeleteExpiredNonces(ctx); err != nil {
-		return "", fmt.Errorf("delete expired nonces: %w", err)
+		s.logger.WarnContext(ctx, "delete expired nonces", "err", err)
 	}
 
 	nonce := newToken()

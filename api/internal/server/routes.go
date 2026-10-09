@@ -12,7 +12,7 @@ import (
 
 func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) {
 	queries := db.New(pool)
-	authService := auth.NewService(queries, verifier)
+	authService := auth.NewService(logger, queries, verifier)
 
 	mux.Handle("GET /health", handleHealth(logger, pool))
 

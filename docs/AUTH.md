@@ -77,7 +77,7 @@ The token is verified *before* the nonce is consumed, so a forged token can't bu
 - But it doesn't make a nonce single-use, and a token leaked together with the request body (e.g. through server logs) would still replay.
 - Server-issued, single-use nonces close both gaps, for the cost of one small table and one extra request at login.
 
-**Cleanup.** Each `POST /auth/nonce` first deletes expired nonces, using the `expires_at` index. That keeps the table bounded without a background job.
+**Cleanup.** Each `POST /auth/nonce` first deletes expired nonces, using the `expires_at` index. That keeps the table bounded without a background job. A failed cleanup is logged and doesn't fail the request: the next call retries, and expired nonces are rejected regardless.
 
 ## Sessions
 
@@ -89,9 +89,9 @@ After login, the API issues its own session token. Google isn't involved again u
   - A self-contained JWT stays valid until it expires, unless you add a denylist, which brings the database lookup back anyway.
 - **Why not reuse Google's ID token as the session?** It expires in about an hour, can't be revoked by us, and would tie every request to Google.
 - **Entropy.** 256 bits from `crypto/rand`, well above the [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) minimum of 64.
-- **Expiry: 90 days, sliding.** Each use pushes expiry 90 days out again. To avoid a write on every request, it's extended at most once a day (`last_used_at`). An active user stays signed in; a phone left unused for 90 days signs out.
+- **Expiry: 90 days, sliding.** Each use pushes expiry 90 days out again. To avoid a write on every request, it's extended at most once a day (`last_used_at`). An active user stays signed in; a phone left unused for 90 days signs out. If the extension fails, it's logged and the request proceeds, because the session is still valid; `last_used_at` stays old, so the next request retries.
   - **Deliberate deviation:** OWASP also recommends an *absolute* timeout (a hard cap regardless of activity). Its suggested values are hours, and they're aimed at browser sessions. Mobile apps conventionally stay signed in, so there's no absolute cap for now. See [Known gaps](#known-gaps).
-- **Expired sessions** are rejected exactly like unknown ones. A user's expired rows are deleted when they log in.
+- **Expired sessions** are rejected exactly like unknown ones. A user's expired rows are deleted when they log in; like the other cleanups, a failure there is only logged.
 - **Sent as** `Authorization: Bearer <token>` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)), never in a URL, where it would end up in logs (RFC 6750 §5.3). A 401 carries `WWW-Authenticate: Bearer`, plus `error="invalid_token"` when a token was sent but isn't valid (§3).
 
 In the API, `internal/auth` holds this logic, with no HTTP code: nonces, `LoginWithGoogle`, `Authenticate` and `Logout`. The `requireAuth` middleware (`api/internal/server/middleware.go`) reads the Bearer token and calls `Authenticate`. It puts the user and session IDs in the request context, and wraps each protected route in `routes.go`.

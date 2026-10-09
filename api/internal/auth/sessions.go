@@ -29,8 +29,10 @@ func (s *Service) Authenticate(ctx context.Context, token string) (db.Session, e
 			ID:        session.ID,
 			ExpiresAt: time.Now().Add(SessionTTL),
 		})
+		// The session is valid either way. last_used_at stays old on failure,
+		// so the next request retries the extension.
 		if err != nil {
-			return db.Session{}, fmt.Errorf("touch session: %w", err)
+			s.logger.WarnContext(ctx, "extend session expiry", "err", err, "session_id", session.ID)
 		}
 	}
 	return session, nil
