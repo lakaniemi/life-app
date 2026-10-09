@@ -40,6 +40,6 @@ The backend goes first (phases 1–4). The app only needs a Google ID token and 
 ## Open questions
 
 - **Production database location.** It blocks deployment, but not these phases.
-- **When migrations run in deployment.** The options are a Cloud Run Job or startup with an advisory lock. Decide when `infra/` exists.
+- **When migrations run in deployment.** The options are a one-off job before each deploy, or startup with an advisory lock. Decide when `infra/` exists.
 - **Account deletion** isn't in scope. When it's added, it must apply the sole-member/sole-admin rules before cascading.
 - **Sign in with Apple** is only needed if the app ships publicly on the App Store (guideline 4.8). The schema change is small; see the data model doc.

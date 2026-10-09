@@ -10,10 +10,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// validate checks request structs against their `validate` struct tags. It's
-// shared package state, unlike handler dependencies, because it's a
-// stateless tool (like a compiled regexp): it only caches struct metadata and
-// is safe for concurrent use, so one instance is the intended usage.
+// validate is package state, unlike handler dependencies, because it only
+// caches struct metadata and is safe for concurrent use (like a regexp).
 var validate = newValidator()
 
 func newValidator() *validator.Validate {

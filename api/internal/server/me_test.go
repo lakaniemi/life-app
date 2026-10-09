@@ -91,6 +91,19 @@ func TestPatchMe(t *testing.T) {
 		checkStatus(t, s.do(t, http.MethodPatch, "/me", token, "not an object"), http.StatusBadRequest)
 	})
 
+	t.Run("rejects an oversize body", func(t *testing.T) {
+		t.Parallel()
+		s := newTestServer(t)
+		_, _, token := s.seedUser(t, "Alice")
+
+		rec := s.do(t, http.MethodPatch, "/me", token, map[string]any{"name": strings.Repeat("a", maxRequestBodyBytes)})
+
+		checkStatus(t, rec, http.StatusRequestEntityTooLarge)
+		if got := decode[errorResponse](t, rec).Error.Code; got != "body_too_large" {
+			t.Errorf("error code = %q, want %q", got, "body_too_large")
+		}
+	})
+
 	t.Run("requires auth", func(t *testing.T) {
 		t.Parallel()
 		s := newTestServer(t)
