@@ -12,7 +12,7 @@
 - **Adding an endpoint:**
   1. Write the handler in the route group's file in `internal/server` (e.g. `auth.go`, `me.go`), with any domain logic in its domain package.
   2. Register it in `routes.go`.
-  3. For a request body, put go-playground/validator rules in `validate` struct tags on the request struct. Then call `decodeJSON`, normalize the input (e.g. trim strings), and call `validateRequest`. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
+  3. For a request body, put go-playground/validator rules in `validate` struct tags on the request struct. Then call `decodeJSON`, normalize the input (e.g. trim strings), and call `validateRequest`. Both write the error response themselves and return false on failure. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
   4. Add endpoint tests next to it.
 - **Tests:** follow `docs/TESTING_STRATEGY.md`, including its per-endpoint checklist. Endpoint tests against a real database are the default; tests that need one call `dbtest.New(t)`. Don't test generated code.
 - **Config:** `cmd/*` calls `config.Load()` once and passes the resulting `config.Config` down. Nothing else reads env vars, except `internal/dbtest` (`TEST_DATABASE_URL`), because tests have no `main`. `ENVIRONMENT` only selects an entry in the `defaults` map in `config.go` and isn't exposed, so no code branches on dev vs prod. Add a new setting as a `Config` field, with defaults in that map where they make sense.

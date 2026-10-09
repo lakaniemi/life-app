@@ -55,8 +55,7 @@ type patchMeResponse struct {
 func handlePatchMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req patchMeRequest
-		if err := decodeJSON(w, r, &req); err != nil {
-			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", err.Error())
+		if !decodeJSON(w, r, logger, &req) {
 			return
 		}
 		// Trimmed before validating, so a blank name fails "required".

@@ -35,8 +35,7 @@ type googleLoginResponse struct {
 func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req googleLoginRequest
-		if err := decodeJSON(w, r, &req); err != nil {
-			writeError(w, r, logger, http.StatusBadRequest, "invalid_body", err.Error())
+		if !decodeJSON(w, r, logger, &req) {
 			return
 		}
 		if !validateRequest(w, r, logger, req) {

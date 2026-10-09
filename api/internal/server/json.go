@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log/slog"
 	"net/http"
 )
@@ -40,10 +40,20 @@ func writeInternalError(w http.ResponseWriter, r *http.Request, logger *slog.Log
 	writeError(w, r, logger, http.StatusInternalServerError, "internal", "internal server error")
 }
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
+// decodeJSON decodes the request body into v and, if it can't, responds with
+// an error. It reports whether decoding succeeded; on false the response is
+// written. The decoder's own message isn't sent, because it names Go types.
+func decodeJSON(w http.ResponseWriter, r *http.Request, logger *slog.Logger, v any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
-		return fmt.Errorf("decode request body: %w", err)
+	err := json.NewDecoder(r.Body).Decode(v)
+	var tooLarge *http.MaxBytesError
+	switch {
+	case err == nil:
+		return true
+	case errors.As(err, &tooLarge):
+		writeError(w, r, logger, http.StatusRequestEntityTooLarge, "body_too_large", "request body is too large")
+	default:
+		writeError(w, r, logger, http.StatusBadRequest, "invalid_body", "request body is not a valid JSON object")
 	}
-	return nil
+	return false
 }
