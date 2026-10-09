@@ -1,7 +1,7 @@
 # CLAUDE.md (api/)
 
 - **Go 1.27, no web framework.** Routing uses `net/http` ServeMux method and path patterns (`"GET /items/{id}"`, read with `r.PathValue("id")`). Don't add a router or framework without discussing it first.
-- **Layout:** `cmd/api` (server) and `cmd/migrate` (migrations) are entrypoints and only do wiring. All other code lives under `internal/`, which the compiler makes unimportable from outside this module. No `pkg/`.
+- **Layout:** `cmd/api` (server), `cmd/migrate` (migrations) and `cmd/devsession` (local dev sessions, not shipped in the image) are entrypoints and only do wiring. Never add a dev-only sign-in route to the API; local auth goes through `cmd/devsession`. All other code lives under `internal/`, which the compiler makes unimportable from outside this module. No `pkg/`.
 - **Packages by responsibility, not by layer.** No `handlers/`, `services/` or `utils/` packages.
   - `internal/server` is the whole HTTP layer: routes, handlers, middleware and JSON helpers, all unexported.
   - Domain logic goes in packages named for what they provide (e.g. `internal/auth`). They don't import `net/http`, and they report caller mistakes as sentinel errors, which handlers map to status codes.

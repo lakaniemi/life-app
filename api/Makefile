@@ -4,7 +4,7 @@ IMAGE := life-app-api
 TEST_DATABASE_URL ?= postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
 
 .PHONY: run dev test cover cover-html lint fmt build docker-build docker-run db-up db-down \
-	migrate-up migrate-down migrate-status migrate-new generate
+	migrate-up migrate-down migrate-status migrate-new generate dev-session
 
 run:
 	ENVIRONMENT=dev go run ./cmd/api
@@ -60,3 +60,9 @@ migrate-new:
 
 generate:
 	go tool sqlc generate
+
+# Prints a session token for dev user $(name), creating the user if needed.
+# Use -s to capture it: TOKEN=$$(make -s dev-session name=Alice)
+dev-session:
+	@test -n "$(name)" || (echo "usage: make dev-session name=<name>" >&2 && exit 1)
+	@ENVIRONMENT=dev go run ./cmd/devsession -name '$(name)'
