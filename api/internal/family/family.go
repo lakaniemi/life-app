@@ -66,9 +66,10 @@ const (
 // Errors that callers distinguish with errors.Is. Anything else is an
 // internal failure.
 var (
-	ErrNotFound   = errors.New("family or member not found")
-	ErrSoleAdmin  = errors.New("a family must keep at least one admin")
-	ErrSoleMember = errors.New("the family's only member can't leave; delete the family instead")
+	ErrFamilyNotFound       = errors.New("family not found")
+	ErrFamilyMemberNotFound = errors.New("family member not found")
+	ErrSoleAdmin            = errors.New("a family must keep at least one admin")
+	ErrSoleMember           = errors.New("the family's only member can't leave; delete the family instead")
 )
 
 // Service creates families and changes their membership.

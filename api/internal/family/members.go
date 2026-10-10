@@ -13,8 +13,9 @@ import (
 )
 
 // ChangeRole sets the role of the family's member userID and returns the
-// updated member. It returns ErrNotFound if the family or member doesn't
-// exist, and ErrSoleAdmin if the family would be left without an admin.
+// updated member. It returns ErrFamilyNotFound or ErrFamilyMemberNotFound if
+// either doesn't exist, and ErrSoleAdmin if the family would be left without
+// an admin.
 func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, role string) (db.ListFamilyMembersRow, error) {
 	var updated db.ListFamilyMembersRow
 	err := s.withTx(ctx, func(q *db.Queries) error {
@@ -24,7 +25,7 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 		}
 		target, ok := findMember(members, userID)
 		if !ok {
-			return ErrNotFound
+			return ErrFamilyMemberNotFound
 		}
 		if target.Role == RoleAdmin && role != RoleAdmin && countAdmins(members) == 1 {
 			return ErrSoleAdmin
@@ -44,9 +45,10 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 	return updated, nil
 }
 
-// RemoveMember removes the family's member userID. It returns ErrNotFound if
-// the family or member doesn't exist, ErrSoleMember if they're the only
-// member, and ErrSoleAdmin if the family would be left without an admin.
+// RemoveMember removes the family's member userID. It returns
+// ErrFamilyNotFound or ErrFamilyMemberNotFound if either doesn't exist,
+// ErrSoleMember if they're the only member, and ErrSoleAdmin if the family
+// would be left without an admin.
 func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) error {
 	return s.withTx(ctx, func(q *db.Queries) error {
 		members, err := lockMembers(ctx, q, familyID)
@@ -55,7 +57,7 @@ func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) 
 		}
 		target, ok := findMember(members, userID)
 		if !ok {
-			return ErrNotFound
+			return ErrFamilyMemberNotFound
 		}
 		// Checked first: the only member is also the only admin, and deleting
 		// the family is the way out.
@@ -80,7 +82,7 @@ func lockMembers(ctx context.Context, q *db.Queries, familyID uuid.UUID) ([]db.L
 	_, err := q.LockFamily(ctx, familyID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		// Deleted since the caller's membership was checked.
-		return nil, ErrNotFound
+		return nil, ErrFamilyNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("lock family: %w", err)
