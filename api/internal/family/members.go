@@ -12,18 +12,21 @@ import (
 	"github.com/lakaniemi/life-app/api/internal/db"
 )
 
-// ChangeRole sets the role of the family's member userID and returns the
-// updated member. It returns ErrFamilyNotFound or ErrFamilyMemberNotFound if
-// either doesn't exist, and ErrSoleAdmin if the family would be left without
-// an admin.
-func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, role string) (db.ListFamilyMembersRow, error) {
+// ChangeRole sets the role of the member targetID in the actor's family and
+// returns the updated member. Only an admin may. It returns
+// ErrFamilyMemberNotFound if targetID isn't a member, and ErrSoleAdmin if the
+// family would be left without an admin.
+func (s *Service) ChangeRole(ctx context.Context, actor db.FamilyMember, targetID uuid.UUID, role string) (db.ListFamilyMembersRow, error) {
 	var updated db.ListFamilyMembersRow
 	err := s.withTx(ctx, func(txQueries *db.Queries) error {
-		members, err := lockMembers(ctx, txQueries, familyID)
+		members, err := lockMembers(ctx, txQueries, actor.FamilyID)
 		if err != nil {
 			return err
 		}
-		target, ok := findMember(members, userID)
+		if err := checkAdmin(members, actor); err != nil {
+			return err
+		}
+		target, ok := findMember(members, targetID)
 		if !ok {
 			return ErrFamilyMemberNotFound
 		}
@@ -31,7 +34,7 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 			return ErrSoleAdmin
 		}
 
-		err = txQueries.UpdateFamilyMemberRole(ctx, db.UpdateFamilyMemberRoleParams{FamilyID: familyID, UserID: userID, Role: role})
+		err = txQueries.UpdateFamilyMemberRole(ctx, db.UpdateFamilyMemberRoleParams{FamilyID: actor.FamilyID, UserID: targetID, Role: role})
 		if err != nil {
 			return fmt.Errorf("update role: %w", err)
 		}
@@ -45,17 +48,23 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 	return updated, nil
 }
 
-// RemoveMember removes the family's member userID. It returns
-// ErrFamilyNotFound or ErrFamilyMemberNotFound if either doesn't exist,
+// RemoveMember removes the member targetID from the actor's family. Admins can
+// remove anyone; any member can remove themselves, which is leaving the
+// family. It returns ErrFamilyMemberNotFound if targetID isn't a member,
 // ErrSoleMember if they're the only member, and ErrSoleAdmin if the family
 // would be left without an admin.
-func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) error {
+func (s *Service) RemoveMember(ctx context.Context, actor db.FamilyMember, targetID uuid.UUID) error {
 	return s.withTx(ctx, func(txQueries *db.Queries) error {
-		members, err := lockMembers(ctx, txQueries, familyID)
+		members, err := lockMembers(ctx, txQueries, actor.FamilyID)
 		if err != nil {
 			return err
 		}
-		target, ok := findMember(members, userID)
+		if targetID != actor.UserID {
+			if err := checkAdmin(members, actor); err != nil {
+				return err
+			}
+		}
+		target, ok := findMember(members, targetID)
 		if !ok {
 			return ErrFamilyMemberNotFound
 		}
@@ -68,7 +77,7 @@ func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) 
 			return ErrSoleAdmin
 		}
 
-		err = txQueries.DeleteFamilyMember(ctx, db.DeleteFamilyMemberParams{FamilyID: familyID, UserID: userID})
+		err = txQueries.DeleteFamilyMember(ctx, db.DeleteFamilyMemberParams{FamilyID: actor.FamilyID, UserID: targetID})
 		if err != nil {
 			return fmt.Errorf("delete member: %w", err)
 		}
@@ -81,7 +90,7 @@ func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) 
 func lockMembers(ctx context.Context, txQueries *db.Queries, familyID uuid.UUID) ([]db.ListFamilyMembersRow, error) {
 	_, err := txQueries.LockFamily(ctx, familyID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		// Deleted since the caller's membership was checked.
+		// Deleted since the actor's membership was read.
 		return nil, ErrFamilyNotFound
 	}
 	if err != nil {
@@ -95,8 +104,22 @@ func lockMembers(ctx context.Context, txQueries *db.Queries, familyID uuid.UUID)
 	return members, nil
 }
 
+// checkAdmin returns ErrForbidden unless the actor is an admin in members,
+// which lockMembers read. An actor who is no longer a member gets
+// ErrFamilyNotFound, like any outsider.
+func checkAdmin(members []db.ListFamilyMembersRow, actor db.FamilyMember) error {
+	current, ok := findMember(members, actor.UserID)
+	if !ok {
+		return ErrFamilyNotFound
+	}
+	if current.Role != RoleAdmin {
+		return ErrForbidden
+	}
+	return nil
+}
+
 func findMember(members []db.ListFamilyMembersRow, userID uuid.UUID) (db.ListFamilyMembersRow, bool) {
-	i := slices.IndexFunc(members, func(m db.ListFamilyMembersRow) bool { return m.UserID == userID })
+	i := slices.IndexFunc(members, func(member db.ListFamilyMembersRow) bool { return member.UserID == userID })
 	if i < 0 {
 		return db.ListFamilyMembersRow{}, false
 	}
@@ -105,8 +128,8 @@ func findMember(members []db.ListFamilyMembersRow, userID uuid.UUID) (db.ListFam
 
 func countAdmins(members []db.ListFamilyMembersRow) int {
 	n := 0
-	for _, m := range members {
-		if m.Role == RoleAdmin {
+	for _, member := range members {
+		if member.Role == RoleAdmin {
 			n++
 		}
 	}

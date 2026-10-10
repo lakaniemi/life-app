@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/lakaniemi/life-app/api/internal/db"
+	"github.com/lakaniemi/life-app/api/internal/family"
+	"github.com/lakaniemi/life-app/api/internal/user"
 )
 
 // userResponse is the public view of a user. db.User isn't serialized
@@ -15,8 +17,8 @@ type userResponse struct {
 	Name string    `json:"name"`
 }
 
-func newUserResponse(u db.User) userResponse {
-	return userResponse{ID: u.ID, Name: u.Name}
+func newUserResponse(userRow db.User) userResponse {
+	return userResponse{ID: userRow.ID, Name: userRow.Name}
 }
 
 type meResponse struct {
@@ -24,19 +26,19 @@ type meResponse struct {
 	Families []familyResponse `json:"families"`
 }
 
-func handleGetMe(queries *db.Queries) apiHandler {
+func handleGetMe(userService *user.Service, familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		userID := sessionFrom(r.Context()).UserID
-		user, err := queries.GetUserByID(r.Context(), userID)
+		currentUser, err := userService.Get(r.Context(), userID)
 		if err != nil {
 			return err
 		}
-		families, err := queries.ListFamiliesForUser(r.Context(), userID)
+		families, err := familyService.ListForUser(r.Context(), userID)
 		if err != nil {
 			return err
 		}
 		return writeJSON(w, http.StatusOK, meResponse{
-			User:     newUserResponse(user),
+			User:     newUserResponse(currentUser),
 			Families: mapSlice(families, newFamilyResponse),
 		})
 	}
@@ -50,20 +52,17 @@ type patchMeResponse struct {
 	User userResponse `json:"user"`
 }
 
-func handlePatchMe(queries *db.Queries) apiHandler {
+func handlePatchMe(userService *user.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var req patchMeRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		user, err := queries.UpdateUserName(r.Context(), db.UpdateUserNameParams{
-			ID:   sessionFrom(r.Context()).UserID,
-			Name: req.Name,
-		})
+		renamed, err := userService.Rename(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
 		if err != nil {
 			return err
 		}
-		return writeJSON(w, http.StatusOK, patchMeResponse{User: newUserResponse(user)})
+		return writeJSON(w, http.StatusOK, patchMeResponse{User: newUserResponse(renamed)})
 	}
 }
