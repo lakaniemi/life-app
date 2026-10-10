@@ -83,7 +83,7 @@ Migrations add each table in the phase that first needs it: users/families/membe
 - The composite primary key prevents duplicate memberships and indexes "members of family X". The extra `user_id` index serves "my families", because a composite index only helps queries on its leading column.
 - `role` is text + CHECK rather than a Postgres ENUM. Enum values can't easily be removed or renamed, while a CHECK constraint is simply dropped and recreated.
 
-**Membership rules.** These are enforced in Go inside a transaction that locks the family's member rows (`SELECT … FOR UPDATE`), so concurrent requests can't both pass the check:
+**Membership rules.** These are enforced in Go inside a transaction that locks the family row (`SELECT … FOR UPDATE`), so concurrent requests can't both pass the check (see the `internal/family` package doc):
 1. Every family has at least one admin.
 2. The **sole admin can't leave or be demoted** while other members remain, so they must promote someone first.
 3. The **sole member can't leave**, so they must delete the family. The UI shows "leave" as "delete" in that case.

@@ -31,6 +31,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | API testing   | Endpoint tests against real Postgres are the main layer | See `api/docs/TESTING_STRATEGY.md`. No DB mocks; tests require a database. Coverage reported, no threshold. |
 | DB backups    | Deferred                                               | Decide together with the production database.                                                  |
 | Auth          | Native Google sign-in → API verifies the ID token → own opaque session | See `docs/AUTH.md` (flow, decisions, sources). go-oidc + our own `aud` check against `GOOGLE_CLIENT_IDS`; server-issued single-use nonce; 90-day sliding sessions stored as SHA-256. |
+| Authorization | Membership-based: every `/families/{familyID}/…` route is wrapped in `requireFamilyMembership` | Non-members get 404, not 403, so family IDs can't be probed. Handlers check the admin role (403). Membership-rule violations are 409 with a machine-readable code. Rules that span rows lock the family row; see the `internal/family` package doc. |
 
 Portability hedge: keep the API coupled to nothing but a `DATABASE_URL` and a container image. That keeps a provider switch to an afternoon, and lets development proceed before the production database is chosen.
 

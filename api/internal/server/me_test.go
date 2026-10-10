@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/lakaniemi/life-app/api/internal/family"
 )
 
 func TestGetMe(t *testing.T) {
@@ -25,6 +27,22 @@ func TestGetMe(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("body mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGetMeListsFamilies(t *testing.T) {
+	t.Parallel()
+	s := newTestServer(t)
+	user, _, token := s.seedUser(t, "Alice")
+	smiths := s.seedFamily(t, "Smiths")
+	s.seedMember(t, smiths.ID, user, family.RoleMember)
+
+	rec := s.do(t, http.MethodGet, "/me", token, nil)
+
+	checkStatus(t, rec, http.StatusOK)
+	want := []familyResponse{{ID: smiths.ID, Name: "Smiths", Role: family.RoleMember}}
+	if diff := cmp.Diff(want, decode[meResponse](t, rec).Families); diff != "" {
+		t.Errorf("families mismatch (-want +got):\n%s", diff)
 	}
 }
 
