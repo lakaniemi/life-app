@@ -28,12 +28,14 @@ type meResponse struct {
 
 func handleGetMe(userService *user.Service, familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := sessionFrom(r.Context()).UserID
-		currentUser, err := userService.Get(r.Context(), userID)
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
+
+		currentUser, err := userService.Get(ctx, userID)
 		if err != nil {
 			return err
 		}
-		families, err := familyService.ListForUser(r.Context(), userID)
+		families, err := familyService.ListForUser(ctx, userID)
 		if err != nil {
 			return err
 		}
@@ -54,12 +56,14 @@ type patchMeResponse struct {
 
 func handlePatchMe(userService *user.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
 		var req patchMeRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		renamed, err := userService.Rename(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
+		renamed, err := userService.Rename(ctx, userID, req.Name)
 		if err != nil {
 			return err
 		}

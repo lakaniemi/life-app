@@ -163,19 +163,21 @@ func familyMembershipFrom(ctx context.Context) db.FamilyMember {
 func newRequireFamilyMembership(logger *slog.Logger, familyService *family.Service) middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			userID := sessionFrom(ctx).UserID
 			familyID, err := uuid.Parse(r.PathValue("familyID"))
 			if err != nil {
 				writeErrorResponse(w, r, logger, family.ErrFamilyNotFound)
 				return
 			}
 
-			membership, err := familyService.Membership(r.Context(), familyID, sessionFrom(r.Context()).UserID)
+			membership, err := familyService.Membership(ctx, familyID, userID)
 			if err != nil {
 				writeErrorResponse(w, r, logger, err)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), familyMembershipKey{}, membership)
+			ctx = context.WithValue(ctx, familyMembershipKey{}, membership)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

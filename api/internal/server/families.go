@@ -44,12 +44,14 @@ type familyNameRequest struct {
 
 func handleCreateFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
 		var req familyNameRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		created, err := familyService.Create(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
+		created, err := familyService.Create(ctx, userID, req.Name)
 		if err != nil {
 			return err
 		}
@@ -65,7 +67,10 @@ type listFamiliesResponse struct {
 
 func handleListFamilies(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		families, err := familyService.ListForUser(r.Context(), sessionFrom(r.Context()).UserID)
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
+
+		families, err := familyService.ListForUser(ctx, userID)
 		if err != nil {
 			return err
 		}
@@ -80,13 +85,15 @@ type getFamilyResponse struct {
 
 func handleGetFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		membership := familyMembershipFrom(r.Context())
-		familyRow, members, err := familyService.Get(r.Context(), membership)
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
+
+		familyRow, members, err := familyService.Get(ctx, actor)
 		if err != nil {
 			return err
 		}
 		return writeJSON(w, http.StatusOK, getFamilyResponse{
-			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
+			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: actor.Role},
 			Members: mapSlice(members, newMemberResponse),
 		})
 	}
@@ -94,25 +101,29 @@ func handleGetFamily(familyService *family.Service) apiHandler {
 
 func handlePatchFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
 		var req familyNameRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		membership := familyMembershipFrom(r.Context())
-		renamed, err := familyService.Rename(r.Context(), membership, req.Name)
+		renamed, err := familyService.Rename(ctx, actor, req.Name)
 		if err != nil {
 			return err
 		}
 		return writeJSON(w, http.StatusOK, familyEnvelope{
-			Family: familyResponse{ID: renamed.ID, Name: renamed.Name, Role: membership.Role},
+			Family: familyResponse{ID: renamed.ID, Name: renamed.Name, Role: actor.Role},
 		})
 	}
 }
 
 func handleDeleteFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if err := familyService.Delete(r.Context(), familyMembershipFrom(r.Context())); err != nil {
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
+
+		if err := familyService.Delete(ctx, actor); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -140,6 +151,8 @@ type patchMemberResponse struct {
 
 func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
 		targetID, err := memberIDFromPath(r)
 		if err != nil {
 			return err
@@ -149,7 +162,7 @@ func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 			return err
 		}
 
-		member, err := familyService.ChangeRole(r.Context(), familyMembershipFrom(r.Context()), targetID, req.Role)
+		member, err := familyService.ChangeRole(ctx, actor, targetID, req.Role)
 		if err != nil {
 			return err
 		}
@@ -159,11 +172,14 @@ func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 
 func handleDeleteFamilyMember(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
 		targetID, err := memberIDFromPath(r)
 		if err != nil {
 			return err
 		}
-		if err := familyService.RemoveMember(r.Context(), familyMembershipFrom(r.Context()), targetID); err != nil {
+
+		if err := familyService.RemoveMember(ctx, actor, targetID); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)

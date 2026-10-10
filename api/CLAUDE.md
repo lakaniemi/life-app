@@ -9,7 +9,7 @@
   - Adapters for external services go in a subpackage of the domain that uses them (e.g. `internal/auth/google`). The domain depends on them through a small interface it defines itself (`auth.TokenVerifier`).
   - Inside a package, organize with file names: one file per route group or concern.
 - **Naming:** the further a name is used from where it's declared, the more descriptive it is. One-letter names only for receivers, `w`/`r` in handlers, `t`/`tt` in tests, loop indices, and variables that live a few lines. Don't name variables after domain packages (`family`, `auth`), since that shadows the package; say what they hold instead (`familyRow`, `familyService`).
-- **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) apiHandler` constructors that take their dependencies as arguments, with no globals.
+- **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) apiHandler` constructors that take their dependencies as arguments, with no globals. A handler starts by reading its inputs into named locals: `ctx := r.Context()` when used more than once, then the caller (`actor := familyMembershipFrom(ctx)` or `userID := sessionFrom(ctx).UserID`), path values and the body. Then it calls the service with them, rather than nesting lookups in the call's arguments.
 - **Errors:** an `apiHandler` returns its errors instead of writing error responses, and its `ServeHTTP` maps them in `writeErrorResponse` (`internal/server/errors.go`):
   - an `*apiError` (`newAPIError(status, code, message)`) for failures the HTTP layer decides, such as a bad body;
   - a domain sentinel through the `domainErrors` table, where new sentinels are added;
