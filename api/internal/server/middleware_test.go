@@ -40,16 +40,16 @@ func TestRequireAuthRejects(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			s := newTestServer(t)
-			user, _, validToken := s.seedUser(t, "Alice")
-			_, expiredToken := s.seedSession(t, user, time.Now().Add(-time.Minute))
+			server := newTestServer(t)
+			user, _, validToken := server.seedUser(t, "Alice")
+			_, expiredToken := server.seedSession(t, user, time.Now().Add(-time.Minute))
 
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/me", nil)
-			if h := tt.authorization(validToken, expiredToken); h != "" {
-				req.Header.Set("Authorization", h)
+			if header := tt.authorization(validToken, expiredToken); header != "" {
+				req.Header.Set("Authorization", header)
 			}
 			rec := httptest.NewRecorder()
-			s.handler.ServeHTTP(rec, req)
+			server.handler.ServeHTTP(rec, req)
 
 			checkStatus(t, rec, http.StatusUnauthorized)
 			if rec.Header().Get("WWW-Authenticate") == "" {
@@ -61,34 +61,34 @@ func TestRequireAuthRejects(t *testing.T) {
 
 func TestRequireAuthAcceptsLowercaseScheme(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(t)
-	_, _, token := s.seedUser(t, "Alice")
+	server := newTestServer(t)
+	_, _, token := server.seedUser(t, "Alice")
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/me", nil)
 	req.Header.Set("Authorization", "bearer "+token)
 	rec := httptest.NewRecorder()
-	s.handler.ServeHTTP(rec, req)
+	server.handler.ServeHTTP(rec, req)
 
 	checkStatus(t, rec, http.StatusOK)
 }
 
 func TestRequireAuthExtendsSessionAfterInterval(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(t)
-	_, session, token := s.seedUser(t, "Alice")
+	server := newTestServer(t)
+	_, session, token := server.seedUser(t, "Alice")
 	// A session last used two days ago that expires in an hour. The API
 	// doesn't expose session timestamps, so this test reads the database.
-	_, err := s.pool.Exec(t.Context(),
+	_, err := server.pool.Exec(t.Context(),
 		`UPDATE sessions SET last_used_at = now() - interval '2 days', expires_at = now() + interval '1 hour' WHERE id = $1`,
 		session.ID)
 	if err != nil {
 		t.Fatalf("backdate session: %v", err)
 	}
 
-	checkStatus(t, s.do(t, http.MethodGet, "/me", token, nil), http.StatusOK)
+	checkStatus(t, server.do(t, http.MethodGet, "/me", token, nil), http.StatusOK)
 
 	var expiresAt time.Time
-	if err := s.pool.QueryRow(t.Context(), `SELECT expires_at FROM sessions WHERE id = $1`, session.ID).Scan(&expiresAt); err != nil {
+	if err := server.pool.QueryRow(t.Context(), `SELECT expires_at FROM sessions WHERE id = $1`, session.ID).Scan(&expiresAt); err != nil {
 		t.Fatalf("read session: %v", err)
 	}
 	if minWant := time.Now().Add(auth.SessionTTL - time.Hour); expiresAt.Before(minWant) {

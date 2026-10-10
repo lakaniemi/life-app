@@ -37,15 +37,15 @@ type statusRecorder struct {
 	status int
 }
 
-func (r *statusRecorder) WriteHeader(status int) {
-	r.status = status
-	r.ResponseWriter.WriteHeader(status)
+func (rec *statusRecorder) WriteHeader(status int) {
+	rec.status = status
+	rec.ResponseWriter.WriteHeader(status)
 }
 
 // Unwrap lets http.ResponseController reach the underlying writer, so
 // features like flushing still work through this wrapper.
-func (r *statusRecorder) Unwrap() http.ResponseWriter {
-	return r.ResponseWriter
+func (rec *statusRecorder) Unwrap() http.ResponseWriter {
+	return rec.ResponseWriter
 }
 
 func newLogRequests(logger *slog.Logger) middleware {

@@ -86,13 +86,13 @@ func NewService(pool *pgxpool.Pool) *Service {
 // Create creates a family with the user as its admin.
 func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string) (db.Family, error) {
 	var created db.Family
-	err := s.withTx(ctx, func(q *db.Queries) error {
+	err := s.withTx(ctx, func(txQueries *db.Queries) error {
 		var err error
-		created, err = q.CreateFamily(ctx, name)
+		created, err = txQueries.CreateFamily(ctx, name)
 		if err != nil {
 			return fmt.Errorf("create family: %w", err)
 		}
-		err = q.AddFamilyMember(ctx, db.AddFamilyMemberParams{FamilyID: created.ID, UserID: userID, Role: RoleAdmin})
+		err = txQueries.AddFamilyMember(ctx, db.AddFamilyMemberParams{FamilyID: created.ID, UserID: userID, Role: RoleAdmin})
 		if err != nil {
 			return fmt.Errorf("add admin: %w", err)
 		}
@@ -104,9 +104,10 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, name string) (db
 	return created, nil
 }
 
-// withTx runs fn in a transaction, with queries bound to it. The transaction
-// commits if fn returns nil and rolls back otherwise.
-func (s *Service) withTx(ctx context.Context, fn func(q *db.Queries) error) error {
+// withTx runs fn in a transaction, with txQueries bound to it. Inside fn, use
+// txQueries, not s.queries, which would run outside the transaction. The
+// transaction commits if fn returns nil and rolls back otherwise.
+func (s *Service) withTx(ctx context.Context, fn func(txQueries *db.Queries) error) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)

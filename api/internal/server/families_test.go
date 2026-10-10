@@ -139,17 +139,17 @@ func TestCreateFamily(t *testing.T) {
 
 	t.Run("creates the family with the caller as admin", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		user, _, token := s.seedUser(t, "Alice")
+		server := newTestServer(t)
+		user, _, token := server.seedUser(t, "Alice")
 
-		rec := s.do(t, http.MethodPost, "/families", token, map[string]any{"name": "  Smiths  "})
+		rec := server.do(t, http.MethodPost, "/families", token, map[string]any{"name": "  Smiths  "})
 
 		checkStatus(t, rec, http.StatusCreated)
 		created := decode[familyEnvelope](t, rec).Family
 		if created.Name != "Smiths" || created.Role != family.RoleAdmin {
 			t.Errorf("family = %+v, want name %q and role %q", created, "Smiths", family.RoleAdmin)
 		}
-		rec = s.do(t, http.MethodGet, "/families/"+created.ID.String(), token, nil)
+		rec = server.do(t, http.MethodGet, "/families/"+created.ID.String(), token, nil)
 		checkStatus(t, rec, http.StatusOK)
 		members := decode[getFamilyResponse](t, rec).Members
 		if len(members) != 1 || members[0].ID != user.ID || members[0].Role != family.RoleAdmin {
@@ -159,8 +159,8 @@ func TestCreateFamily(t *testing.T) {
 
 	t.Run("rejects invalid names with the failing field", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		_, _, token := s.seedUser(t, "Alice")
+		server := newTestServer(t)
+		_, _, token := server.seedUser(t, "Alice")
 
 		tests := []struct {
 			name     string
@@ -170,7 +170,7 @@ func TestCreateFamily(t *testing.T) {
 			{name: strings.Repeat("a", 101), wantRule: "max"},
 		}
 		for _, tt := range tests {
-			rec := s.do(t, http.MethodPost, "/families", token, map[string]any{"name": tt.name})
+			rec := server.do(t, http.MethodPost, "/families", token, map[string]any{"name": tt.name})
 
 			checkStatus(t, rec, http.StatusBadRequest)
 			want := []fieldError{{Field: "name", Rule: tt.wantRule}}
@@ -186,18 +186,18 @@ func TestListFamilies(t *testing.T) {
 
 	t.Run("lists the caller's families with their role", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		alice, _, token := s.seedUser(t, "Alice")
-		bob, _, _ := s.seedUser(t, "Bob")
-		smiths := s.seedFamily(t, "Smiths")
-		s.seedMember(t, smiths.ID, alice, family.RoleMember)
-		joneses := s.seedFamily(t, "Joneses")
-		s.seedMember(t, joneses.ID, alice, family.RoleAdmin)
+		server := newTestServer(t)
+		alice, _, token := server.seedUser(t, "Alice")
+		bob, _, _ := server.seedUser(t, "Bob")
+		smiths := server.seedFamily(t, "Smiths")
+		server.seedMember(t, smiths.ID, alice, family.RoleMember)
+		joneses := server.seedFamily(t, "Joneses")
+		server.seedMember(t, joneses.ID, alice, family.RoleAdmin)
 		// Someone else's family, which must not be listed.
-		browns := s.seedFamily(t, "Browns")
-		s.seedMember(t, browns.ID, bob, family.RoleAdmin)
+		browns := server.seedFamily(t, "Browns")
+		server.seedMember(t, browns.ID, bob, family.RoleAdmin)
 
-		rec := s.do(t, http.MethodGet, "/families", token, nil)
+		rec := server.do(t, http.MethodGet, "/families", token, nil)
 
 		checkStatus(t, rec, http.StatusOK)
 		want := listFamiliesResponse{Families: []familyResponse{
@@ -211,10 +211,10 @@ func TestListFamilies(t *testing.T) {
 
 	t.Run("is an empty list without families", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		_, _, token := s.seedUser(t, "Alice")
+		server := newTestServer(t)
+		_, _, token := server.seedUser(t, "Alice")
 
-		rec := s.do(t, http.MethodGet, "/families", token, nil)
+		rec := server.do(t, http.MethodGet, "/families", token, nil)
 
 		checkStatus(t, rec, http.StatusOK)
 		if diff := cmp.Diff(map[string]any{"families": []any{}}, decode[map[string]any](t, rec)); diff != "" {

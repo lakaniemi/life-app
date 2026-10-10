@@ -73,15 +73,15 @@ func Load() (Config, error) {
 // requires it, so it's validated where it's used (google.New), not here.
 func fromEnv(getenv func(string) string) (Config, error) {
 	env := cmp.Or(getenv("ENVIRONMENT"), defaultEnvironment)
-	d, ok := defaults[env]
+	envDefaults, ok := defaults[env]
 	if !ok {
 		return Config{}, fmt.Errorf("unknown ENVIRONMENT %q (want one of %q)", env, slices.Sorted(maps.Keys(defaults)))
 	}
 
 	cfg := Config{
-		LogFormat:       d.LogFormat,
-		Port:            cmp.Or(getenv("PORT"), d.Port),
-		DatabaseURL:     cmp.Or(getenv("DATABASE_URL"), d.DatabaseURL),
+		LogFormat:       envDefaults.LogFormat,
+		Port:            cmp.Or(getenv("PORT"), envDefaults.Port),
+		DatabaseURL:     cmp.Or(getenv("DATABASE_URL"), envDefaults.DatabaseURL),
 		GoogleClientIDs: splitList(getenv("GOOGLE_CLIENT_IDS")),
 	}
 	if cfg.DatabaseURL == "" {

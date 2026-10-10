@@ -18,8 +18,8 @@ import (
 // an admin.
 func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, role string) (db.ListFamilyMembersRow, error) {
 	var updated db.ListFamilyMembersRow
-	err := s.withTx(ctx, func(q *db.Queries) error {
-		members, err := lockMembers(ctx, q, familyID)
+	err := s.withTx(ctx, func(txQueries *db.Queries) error {
+		members, err := lockMembers(ctx, txQueries, familyID)
 		if err != nil {
 			return err
 		}
@@ -31,7 +31,7 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 			return ErrSoleAdmin
 		}
 
-		err = q.UpdateFamilyMemberRole(ctx, db.UpdateFamilyMemberRoleParams{FamilyID: familyID, UserID: userID, Role: role})
+		err = txQueries.UpdateFamilyMemberRole(ctx, db.UpdateFamilyMemberRoleParams{FamilyID: familyID, UserID: userID, Role: role})
 		if err != nil {
 			return fmt.Errorf("update role: %w", err)
 		}
@@ -50,8 +50,8 @@ func (s *Service) ChangeRole(ctx context.Context, familyID, userID uuid.UUID, ro
 // ErrSoleMember if they're the only member, and ErrSoleAdmin if the family
 // would be left without an admin.
 func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) error {
-	return s.withTx(ctx, func(q *db.Queries) error {
-		members, err := lockMembers(ctx, q, familyID)
+	return s.withTx(ctx, func(txQueries *db.Queries) error {
+		members, err := lockMembers(ctx, txQueries, familyID)
 		if err != nil {
 			return err
 		}
@@ -68,7 +68,7 @@ func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) 
 			return ErrSoleAdmin
 		}
 
-		err = q.DeleteFamilyMember(ctx, db.DeleteFamilyMemberParams{FamilyID: familyID, UserID: userID})
+		err = txQueries.DeleteFamilyMember(ctx, db.DeleteFamilyMemberParams{FamilyID: familyID, UserID: userID})
 		if err != nil {
 			return fmt.Errorf("delete member: %w", err)
 		}
@@ -78,8 +78,8 @@ func (s *Service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) 
 
 // lockMembers locks the family, then reads its members. Call it inside a
 // transaction; see the package doc for why the order matters.
-func lockMembers(ctx context.Context, q *db.Queries, familyID uuid.UUID) ([]db.ListFamilyMembersRow, error) {
-	_, err := q.LockFamily(ctx, familyID)
+func lockMembers(ctx context.Context, txQueries *db.Queries, familyID uuid.UUID) ([]db.ListFamilyMembersRow, error) {
+	_, err := txQueries.LockFamily(ctx, familyID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		// Deleted since the caller's membership was checked.
 		return nil, ErrFamilyNotFound
@@ -88,7 +88,7 @@ func lockMembers(ctx context.Context, q *db.Queries, familyID uuid.UUID) ([]db.L
 		return nil, fmt.Errorf("lock family: %w", err)
 	}
 
-	members, err := q.ListFamilyMembers(ctx, familyID)
+	members, err := txQueries.ListFamilyMembers(ctx, familyID)
 	if err != nil {
 		return nil, fmt.Errorf("list members: %w", err)
 	}
