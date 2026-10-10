@@ -12,7 +12,7 @@
 - **Adding an endpoint:**
   1. Write the handler in the route group's file in `internal/server` (e.g. `auth.go`, `me.go`), with any domain logic in its domain package.
   2. Register it in `routes.go`.
-  3. For a request body, put go-playground/validator rules in `validate` struct tags on the request struct. Then call `decodeJSON`, normalize the input (e.g. trim strings), and call `validateRequest`. Both write the error response themselves and return false on failure. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
+  3. For a request body, declare normalization in go-playground/mold `mod` struct tags (e.g. `mod:"trim"` on user-entered text) and rules in go-playground/validator `validate` tags on the request struct. Then call `decodeAndValidateRequest(w, r, logger, &req)`, which decodes, normalizes and validates in that order. It writes the error response itself and returns false on failure. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
   4. For a route under `/families/{familyID}`, wrap the handler in `requireAuth(…, requireFamilyMembership(…, handler))`, read the caller's membership with `familyMembershipFrom`, and use `checkFamilyAdmin` for admin-only actions. Every query on family-owned data filters by that `familyID`.
   5. Add endpoint tests next to it. Add a family-scoped route to `TestFamilyRoutesAuthorization` too.
 - **Tests:** follow `docs/TESTING_STRATEGY.md`, including its per-endpoint checklist. Endpoint tests against a real database are the default; tests that need one call `dbtest.New(t)`. Don't test generated code.
