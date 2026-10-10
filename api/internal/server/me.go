@@ -40,7 +40,7 @@ func handleGetMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 		}
 		writeJSON(w, r, logger, http.StatusOK, meResponse{
 			User:     newUserResponse(user),
-			Families: newFamilyResponses(families),
+			Families: mapSlice(families, newFamilyResponse),
 		})
 	})
 }

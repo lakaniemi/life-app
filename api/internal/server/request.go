@@ -61,15 +61,15 @@ func validateRequest(w http.ResponseWriter, r *http.Request, logger *slog.Logger
 		return true
 	}
 
-	var verrs validator.ValidationErrors
-	if !errors.As(err, &verrs) {
+	var validationErrs validator.ValidationErrors
+	if !errors.As(err, &validationErrs) {
 		// Not a validation failure but a misuse, such as passing a non-struct.
 		writeInternalError(w, r, logger, err)
 		return false
 	}
-	fields := make([]fieldError, len(verrs))
-	for i, fe := range verrs {
-		fields[i] = fieldError{Field: fe.Field(), Rule: fe.Tag()}
+	fields := make([]fieldError, len(validationErrs))
+	for i, fieldErr := range validationErrs {
+		fields[i] = fieldError{Field: fieldErr.Field(), Rule: fieldErr.Tag()}
 	}
 	writeJSON(w, r, logger, http.StatusBadRequest, errorResponse{Error: errorBody{
 		Code:    "invalid_body",

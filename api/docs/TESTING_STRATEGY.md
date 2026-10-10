@@ -16,7 +16,7 @@ In priority order:
    - **Arrange:** seed data directly with sqlc queries. It's fast and makes the setup explicit.
    - **Act and assert:** through HTTP.
      - Check the status code.
-     - Decode the JSON body and compare it with `cmp.Diff`. Use `cmpopts` to ignore generated IDs and timestamps.
+     - Decode the JSON body and compare it with `checkDiff` (a `cmp.Diff` wrapper). Use `cmpopts` with `cmp.Diff` directly to ignore generated IDs and timestamps.
    - **Side effects:** check a write through a follow-up request when the API exposes the result. Query the database only when it doesn't.
 2. **Unit tests.** For pure functions with real branching, such as config loading, validation and domain calculations. No HTTP and no database.
 3. **Direct query tests.** Only for non-trivial SQL that is awkward to reach through HTTP, such as aggregations or tricky NULL and ordering semantics. A plain CRUD query is covered by the endpoint that uses it.
@@ -55,7 +55,7 @@ Don't use test doubles for the database. Use them only for external services and
 - **Naming:** subtest names describe behavior, e.g. `"other family's list is not found"`.
 - **Context and failures:** use `t.Context()`. Use `t.Fatalf` only when the rest of the test can't meaningfully run. Otherwise use `t.Errorf`.
 - **Assertions:** use the stdlib, plus `github.com/google/go-cmp` for comparing structs and decoded bodies. Don't add assertion frameworks.
-- **Shared helpers:** keep them in `internal/server/helpers_test.go`, e.g. `newTestServer(t)`, its `do(...)` and `seedUser(...)` methods, and `checkStatus`/`decode`.
+- **Shared helpers:** keep them in `internal/server/helpers_test.go`, e.g. `newTestServer(t)`, its `do(...)` and `seedUser(...)` methods, and `checkStatus`/`checkDiff`/`decode`.
 
 ## Coverage
 

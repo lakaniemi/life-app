@@ -87,8 +87,8 @@ func run(ctx context.Context, args []string) (err error) {
 func up(ctx context.Context, provider *goose.Provider) error {
 	results, err := provider.Up(ctx)
 	// On failure, results still lists the migrations applied before it.
-	for _, r := range results {
-		fmt.Println(r)
+	for _, result := range results {
+		fmt.Println(result)
 	}
 	if err != nil {
 		return fmt.Errorf("migrate up: %w", err)
@@ -113,12 +113,12 @@ func status(ctx context.Context, provider *goose.Provider) error {
 	if err != nil {
 		return fmt.Errorf("migrate status: %w", err)
 	}
-	for _, s := range statuses {
+	for _, migration := range statuses {
 		appliedAt := "-"
-		if !s.AppliedAt.IsZero() {
-			appliedAt = s.AppliedAt.Format(time.DateTime)
+		if !migration.AppliedAt.IsZero() {
+			appliedAt = migration.AppliedAt.Format(time.DateTime)
 		}
-		fmt.Printf("%-8s %-20s %s\n", s.State, appliedAt, s.Source.Path)
+		fmt.Printf("%-8s %-20s %s\n", migration.State, appliedAt, migration.Source.Path)
 	}
 	return nil
 }

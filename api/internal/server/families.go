@@ -37,14 +37,8 @@ type familyResponse struct {
 	Role string    `json:"role"`
 }
 
-// newFamilyResponses returns a non-nil slice, so an empty list encodes as []
-// rather than null.
-func newFamilyResponses(rows []db.ListFamiliesForUserRow) []familyResponse {
-	families := make([]familyResponse, len(rows))
-	for i, f := range rows {
-		families[i] = familyResponse{ID: f.ID, Name: f.Name, Role: f.Role}
-	}
-	return families
+func newFamilyResponse(row db.ListFamiliesForUserRow) familyResponse {
+	return familyResponse{ID: row.ID, Name: row.Name, Role: row.Role}
 }
 
 type memberResponse struct {
@@ -54,8 +48,8 @@ type memberResponse struct {
 	JoinedAt time.Time `json:"joinedAt"`
 }
 
-func newMemberResponse(m db.ListFamilyMembersRow) memberResponse {
-	return memberResponse{ID: m.UserID, Name: m.Name, Role: m.Role, JoinedAt: m.JoinedAt}
+func newMemberResponse(member db.ListFamilyMembersRow) memberResponse {
+	return memberResponse{ID: member.UserID, Name: member.Name, Role: member.Role, JoinedAt: member.JoinedAt}
 }
 
 // familyEnvelope is the body of responses that return a single family.
@@ -67,14 +61,14 @@ type familyNameRequest struct {
 	Name string `json:"name" mod:"trim" validate:"required,max=100"`
 }
 
-func handleCreateFamily(logger *slog.Logger, families *family.Service) http.Handler {
+func handleCreateFamily(logger *slog.Logger, familyService *family.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req familyNameRequest
 		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 
-		created, err := families.Create(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
+		created, err := familyService.Create(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
@@ -96,7 +90,7 @@ func handleListFamilies(logger *slog.Logger, queries *db.Queries) http.Handler {
 			writeInternalError(w, r, logger, err)
 			return
 		}
-		writeJSON(w, r, logger, http.StatusOK, listFamiliesResponse{Families: newFamilyResponses(rows)})
+		writeJSON(w, r, logger, http.StatusOK, listFamiliesResponse{Families: mapSlice(rows, newFamilyResponse)})
 	})
 }
 
@@ -109,7 +103,7 @@ func handleGetFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		membership := familyMembershipFrom(r.Context())
 
-		f, err := queries.GetFamily(r.Context(), membership.FamilyID)
+		familyRow, err := queries.GetFamily(r.Context(), membership.FamilyID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Deleted since requireFamilyMembership checked.
 			writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
@@ -119,19 +113,15 @@ func handleGetFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 			writeInternalError(w, r, logger, err)
 			return
 		}
-		rows, err := queries.ListFamilyMembers(r.Context(), membership.FamilyID)
+		members, err := queries.ListFamilyMembers(r.Context(), membership.FamilyID)
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
 		}
 
-		members := make([]memberResponse, len(rows))
-		for i, m := range rows {
-			members[i] = newMemberResponse(m)
-		}
 		writeJSON(w, r, logger, http.StatusOK, getFamilyResponse{
-			Family:  familyResponse{ID: f.ID, Name: f.Name, Role: membership.Role},
-			Members: members,
+			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
+			Members: mapSlice(members, newMemberResponse),
 		})
 	})
 }
@@ -147,7 +137,7 @@ func handlePatchFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 		}
 
 		membership := familyMembershipFrom(r.Context())
-		f, err := queries.UpdateFamilyName(r.Context(), db.UpdateFamilyNameParams{ID: membership.FamilyID, Name: req.Name})
+		familyRow, err := queries.UpdateFamilyName(r.Context(), db.UpdateFamilyNameParams{ID: membership.FamilyID, Name: req.Name})
 		if errors.Is(err, pgx.ErrNoRows) {
 			writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
 			return
@@ -157,7 +147,7 @@ func handlePatchFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 			return
 		}
 		writeJSON(w, r, logger, http.StatusOK, familyEnvelope{
-			Family: familyResponse{ID: f.ID, Name: f.Name, Role: membership.Role},
+			Family: familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
 		})
 	})
 }
@@ -196,7 +186,7 @@ type patchMemberResponse struct {
 	Member memberResponse `json:"member"`
 }
 
-func handlePatchFamilyMember(logger *slog.Logger, families *family.Service) http.Handler {
+func handlePatchFamilyMember(logger *slog.Logger, familyService *family.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !checkFamilyAdmin(w, r, logger) {
 			return
@@ -210,7 +200,7 @@ func handlePatchFamilyMember(logger *slog.Logger, families *family.Service) http
 			return
 		}
 
-		member, err := families.ChangeRole(r.Context(), familyMembershipFrom(r.Context()).FamilyID, userID, req.Role)
+		member, err := familyService.ChangeRole(r.Context(), familyMembershipFrom(r.Context()).FamilyID, userID, req.Role)
 		if err != nil {
 			writeFamilyError(w, r, logger, err)
 			return
@@ -221,7 +211,7 @@ func handlePatchFamilyMember(logger *slog.Logger, families *family.Service) http
 
 // handleDeleteFamilyMember removes a member. Admins can remove anyone; any
 // member can remove themselves, which is leaving the family.
-func handleDeleteFamilyMember(logger *slog.Logger, families *family.Service) http.Handler {
+func handleDeleteFamilyMember(logger *slog.Logger, familyService *family.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := memberIDFromPath(w, r, logger)
 		if !ok {
@@ -232,7 +222,7 @@ func handleDeleteFamilyMember(logger *slog.Logger, families *family.Service) htt
 			return
 		}
 
-		if err := families.RemoveMember(r.Context(), membership.FamilyID, userID); err != nil {
+		if err := familyService.RemoveMember(r.Context(), membership.FamilyID, userID); err != nil {
 			writeFamilyError(w, r, logger, err)
 			return
 		}

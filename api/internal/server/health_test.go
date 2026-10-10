@@ -28,13 +28,13 @@ func TestHealth(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			s := newTestServer(t)
+			server := newTestServer(t)
 			if !tt.databaseUp {
 				// A closed pool fails every ping, like an unreachable database.
-				s.pool.Close()
+				server.pool.Close()
 			}
 
-			rec := s.do(t, http.MethodGet, "/health", "", nil)
+			rec := server.do(t, http.MethodGet, "/health", "", nil)
 
 			checkStatus(t, rec, http.StatusOK)
 			if got := rec.Header().Get("Content-Type"); got != "application/json" {

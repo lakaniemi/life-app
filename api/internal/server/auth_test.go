@@ -33,9 +33,9 @@ func (s testServer) login(t *testing.T, idToken string) *httptest.ResponseRecord
 
 func TestCreateNonce(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(t)
+	server := newTestServer(t)
 
-	first, second := s.newNonce(t), s.newNonce(t)
+	first, second := server.newNonce(t), server.newNonce(t)
 
 	if first == "" || first == second {
 		t.Errorf("nonces = %q, %q, want distinct non-empty values", first, second)
@@ -47,17 +47,17 @@ func TestGoogleLogin(t *testing.T) {
 
 	t.Run("first login creates the user and a working session", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		idToken := s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: s.newNonce(t)})
+		server := newTestServer(t)
+		idToken := server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: server.newNonce(t)})
 
-		rec := s.login(t, idToken)
+		rec := server.login(t, idToken)
 
 		checkStatus(t, rec, http.StatusOK)
 		got := decode[googleLoginResponse](t, rec)
 		if got.Token == "" || got.User.Name != "Alice" {
 			t.Fatalf("response = %+v, want a token and user Alice", got)
 		}
-		me := decode[meResponse](t, s.do(t, http.MethodGet, "/me", got.Token, nil))
+		me := decode[meResponse](t, server.do(t, http.MethodGet, "/me", got.Token, nil))
 		if me.User != got.User {
 			t.Errorf("GET /me user = %+v, want %+v", me.User, got.User)
 		}
@@ -65,11 +65,11 @@ func TestGoogleLogin(t *testing.T) {
 
 	t.Run("later login finds the user and keeps their name", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
-		first := decode[googleLoginResponse](t, s.login(t,
-			s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: s.newNonce(t)})))
+		server := newTestServer(t)
+		first := decode[googleLoginResponse](t, server.login(t,
+			server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: server.newNonce(t)})))
 
-		rec := s.login(t, s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice Renamed", Nonce: s.newNonce(t)}))
+		rec := server.login(t, server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice Renamed", Nonce: server.newNonce(t)}))
 
 		checkStatus(t, rec, http.StatusOK)
 		got := decode[googleLoginResponse](t, rec)
@@ -83,9 +83,9 @@ func TestGoogleLogin(t *testing.T) {
 
 	t.Run("missing id token", func(t *testing.T) {
 		t.Parallel()
-		s := newTestServer(t)
+		server := newTestServer(t)
 
-		checkStatus(t, s.do(t, http.MethodPost, "/auth/google", "", map[string]any{}), http.StatusBadRequest)
+		checkStatus(t, server.do(t, http.MethodPost, "/auth/google", "", map[string]any{}), http.StatusBadRequest)
 	})
 }
 
@@ -94,7 +94,7 @@ func TestGoogleLoginRejects(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		idToken func(t *testing.T, s testServer) string
+		idToken func(t *testing.T, server testServer) string
 	}{
 		{
 			name:    "token Google didn't issue",
@@ -102,33 +102,33 @@ func TestGoogleLoginRejects(t *testing.T) {
 		},
 		{
 			name: "token without nonce",
-			idToken: func(_ *testing.T, s testServer) string {
-				return s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice"})
+			idToken: func(_ *testing.T, server testServer) string {
+				return server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice"})
 			},
 		},
 		{
 			name: "nonce we never issued",
-			idToken: func(_ *testing.T, s testServer) string {
-				return s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: rand.Text()})
+			idToken: func(_ *testing.T, server testServer) string {
+				return server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: rand.Text()})
 			},
 		},
 		{
 			name: "replayed token",
-			idToken: func(t *testing.T, s testServer) string {
-				idToken := s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: s.newNonce(t)})
-				checkStatus(t, s.login(t, idToken), http.StatusOK)
+			idToken: func(t *testing.T, server testServer) string {
+				idToken := server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: server.newNonce(t)})
+				checkStatus(t, server.login(t, idToken), http.StatusOK)
 				return idToken
 			},
 		},
 		{
 			name: "expired nonce",
-			idToken: func(t *testing.T, s testServer) string {
+			idToken: func(t *testing.T, server testServer) string {
 				nonce := rand.Text()
-				err := s.queries.CreateNonce(t.Context(), db.CreateNonceParams{Nonce: nonce, ExpiresAt: time.Now().Add(-time.Minute)})
+				err := server.queries.CreateNonce(t.Context(), db.CreateNonceParams{Nonce: nonce, ExpiresAt: time.Now().Add(-time.Minute)})
 				if err != nil {
 					t.Fatalf("create nonce: %v", err)
 				}
-				return s.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: nonce})
+				return server.newGoogleToken(google.Identity{Subject: "sub-1", Name: "Alice", Nonce: nonce})
 			},
 		},
 	}
@@ -136,9 +136,9 @@ func TestGoogleLoginRejects(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			s := newTestServer(t)
+			server := newTestServer(t)
 
-			rec := s.login(t, tt.idToken(t, s))
+			rec := server.login(t, tt.idToken(t, server))
 
 			checkStatus(t, rec, http.StatusUnauthorized)
 		})
@@ -147,13 +147,13 @@ func TestGoogleLoginRejects(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	t.Parallel()
-	s := newTestServer(t)
-	user, _, token := s.seedUser(t, "Alice")
-	_, otherDeviceToken := s.seedSession(t, user, time.Now().Add(auth.SessionTTL))
+	server := newTestServer(t)
+	user, _, token := server.seedUser(t, "Alice")
+	_, otherDeviceToken := server.seedSession(t, user, time.Now().Add(auth.SessionTTL))
 
-	checkStatus(t, s.do(t, http.MethodPost, "/auth/logout", token, nil), http.StatusNoContent)
+	checkStatus(t, server.do(t, http.MethodPost, "/auth/logout", token, nil), http.StatusNoContent)
 
-	checkStatus(t, s.do(t, http.MethodGet, "/me", token, nil), http.StatusUnauthorized)
-	checkStatus(t, s.do(t, http.MethodGet, "/me", otherDeviceToken, nil), http.StatusOK)
-	checkStatus(t, s.do(t, http.MethodPost, "/auth/logout", "", nil), http.StatusUnauthorized)
+	checkStatus(t, server.do(t, http.MethodGet, "/me", token, nil), http.StatusUnauthorized)
+	checkStatus(t, server.do(t, http.MethodGet, "/me", otherDeviceToken, nil), http.StatusOK)
+	checkStatus(t, server.do(t, http.MethodPost, "/auth/logout", "", nil), http.StatusUnauthorized)
 }
