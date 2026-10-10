@@ -21,8 +21,8 @@ type healthResponse struct {
 // Always responds 200 while the process can serve requests, so a database
 // outage doesn't make a liveness probe restart the server. Database problems
 // are reported in the body instead.
-func handleHealth(logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleHealth(logger *slog.Logger, pool *pgxpool.Pool) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		resp := healthResponse{Status: "ok", Database: "ok"}
 
 		ctx, cancel := context.WithTimeout(r.Context(), healthPingTimeout)
@@ -33,6 +33,6 @@ func handleHealth(logger *slog.Logger, pool *pgxpool.Pool) http.Handler {
 			resp = healthResponse{Status: "degraded", Database: "unavailable"}
 		}
 
-		writeJSON(w, r, logger, http.StatusOK, resp)
-	})
+		return writeJSON(w, http.StatusOK, resp)
+	}
 }

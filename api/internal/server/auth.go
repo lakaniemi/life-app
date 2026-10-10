@@ -12,15 +12,14 @@ type nonceResponse struct {
 	Nonce string `json:"nonce"`
 }
 
-func handleCreateNonce(logger *slog.Logger, authService *auth.Service) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleCreateNonce(authService *auth.Service) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		nonce, err := authService.NewNonce(r.Context())
 		if err != nil {
-			writeInternalError(w, r, logger, err)
-			return
+			return err
 		}
-		writeJSON(w, r, logger, http.StatusOK, nonceResponse{Nonce: nonce})
-	})
+		return writeJSON(w, http.StatusOK, nonceResponse{Nonce: nonce})
+	}
 }
 
 type googleLoginRequest struct {
@@ -32,40 +31,35 @@ type googleLoginResponse struct {
 	User  userResponse `json:"user"`
 }
 
-func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		var req googleLoginRequest
-		if !decodeAndValidateRequest(w, r, logger, &req) {
-			return
+		if err := decodeAndValidateRequest(w, r, &req); err != nil {
+			return err
 		}
 
 		token, user, err := authService.LoginWithGoogle(r.Context(), req.IDToken)
-		switch {
-		case errors.Is(err, auth.ErrInvalidIDToken):
-			// The reason stays in the logs. This also covers failing to fetch
-			// Google's keys, which isn't the client's fault, but can't be told
-			// apart from a bad token reliably.
+		if errors.Is(err, auth.ErrInvalidIDToken) {
+			// The reason stays in the logs: the response only says the token is
+			// invalid. This also covers failing to fetch Google's keys, which
+			// isn't the client's fault, but can't be told apart from a bad token
+			// reliably.
 			logger.WarnContext(r.Context(), "google login rejected", "err", err)
-			writeError(w, r, logger, http.StatusUnauthorized, "invalid_id_token", "invalid Google ID token")
-			return
-		case errors.Is(err, auth.ErrInvalidNonce):
-			writeError(w, r, logger, http.StatusUnauthorized, "invalid_nonce", err.Error())
-			return
-		case err != nil:
-			writeInternalError(w, r, logger, err)
-			return
+		}
+		if err != nil {
+			return err
 		}
 
-		writeJSON(w, r, logger, http.StatusOK, googleLoginResponse{Token: token, User: newUserResponse(user)})
-	})
+		return writeJSON(w, http.StatusOK, googleLoginResponse{Token: token, User: newUserResponse(user)})
+	}
 }
 
-func handleLogout(logger *slog.Logger, authService *auth.Service) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleLogout(authService *auth.Service) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		if err := authService.Logout(r.Context(), sessionFrom(r.Context()).SessionID); err != nil {
-			writeInternalError(w, r, logger, err)
-			return
+			return err
 		}
 		w.WriteHeader(http.StatusNoContent)
-	})
+		return nil
+	}
 }

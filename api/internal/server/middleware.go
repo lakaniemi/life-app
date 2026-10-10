@@ -76,9 +76,32 @@ type authSession struct {
 // Context keys are unexported types, so no other package can read or
 // overwrite the values stored under them.
 type (
+	loggerKey           struct{}
 	sessionKey          struct{}
 	familyMembershipKey struct{}
 )
+
+// newAttachLogger returns attachLogger, which puts logger in the request
+// context for apiHandler.ServeHTTP. Everything else gets the logger as an
+// argument.
+func newAttachLogger(logger *slog.Logger) middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), loggerKey{}, logger)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// loggerFrom returns the logger attachLogger stored, which server.New
+// applies to every request.
+func loggerFrom(ctx context.Context) *slog.Logger {
+	logger, ok := ctx.Value(loggerKey{}).(*slog.Logger)
+	if !ok {
+		panic("loggerFrom: no logger in context; is the handler served through server.New?")
+	}
+	return logger
+}
 
 // sessionFrom returns the session requireAuth stored. Only call it from
 // handlers wrapped in requireAuth.
@@ -98,18 +121,18 @@ func newRequireAuth(logger *slog.Logger, authService *auth.Service) middleware {
 			token, ok := bearerToken(r)
 			if !ok {
 				w.Header().Set("WWW-Authenticate", "Bearer")
-				writeError(w, r, logger, http.StatusUnauthorized, "unauthorized", "missing bearer token")
+				writeErrorResponse(w, r, logger, newAPIError(http.StatusUnauthorized, "unauthorized", "missing bearer token"))
 				return
 			}
 
 			session, err := authService.Authenticate(r.Context(), token)
 			if errors.Is(err, auth.ErrInvalidSession) {
 				w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
-				writeError(w, r, logger, http.StatusUnauthorized, "unauthorized", "invalid or expired session")
+				writeErrorResponse(w, r, logger, newAPIError(http.StatusUnauthorized, "unauthorized", "invalid or expired session"))
 				return
 			}
 			if err != nil {
-				writeInternalError(w, r, logger, err)
+				writeErrorResponse(w, r, logger, err)
 				return
 			}
 
@@ -144,7 +167,7 @@ func newRequireFamilyMembership(logger *slog.Logger, queries *db.Queries) middle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			familyID, err := uuid.Parse(r.PathValue("familyID"))
 			if err != nil {
-				writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
+				writeErrorResponse(w, r, logger, family.ErrFamilyNotFound)
 				return
 			}
 
@@ -153,11 +176,11 @@ func newRequireFamilyMembership(logger *slog.Logger, queries *db.Queries) middle
 				UserID:   sessionFrom(r.Context()).UserID,
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
-				writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
+				writeErrorResponse(w, r, logger, family.ErrFamilyNotFound)
 				return
 			}
 			if err != nil {
-				writeInternalError(w, r, logger, err)
+				writeErrorResponse(w, r, logger, err)
 				return
 			}
 
@@ -167,14 +190,13 @@ func newRequireFamilyMembership(logger *slog.Logger, queries *db.Queries) middle
 	}
 }
 
-// checkFamilyAdmin responds 403 unless the caller is an admin of the family.
-// It reports whether they are; on false the response is written.
-func checkFamilyAdmin(w http.ResponseWriter, r *http.Request, logger *slog.Logger) bool {
+// checkFamilyAdmin returns a 403 error unless the caller is an admin of the
+// family.
+func checkFamilyAdmin(r *http.Request) error {
 	if familyMembershipFrom(r.Context()).Role != family.RoleAdmin {
-		writeError(w, r, logger, http.StatusForbidden, "forbidden", "only a family admin can do this")
-		return false
+		return newAPIError(http.StatusForbidden, "forbidden", "only a family admin can do this")
 	}
-	return true
+	return nil
 }
 
 // bearerToken extracts the token from "Authorization: Bearer <token>". The
