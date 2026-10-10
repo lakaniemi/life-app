@@ -33,18 +33,19 @@ type googleLoginResponse struct {
 
 func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
 		var req googleLoginRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		token, user, err := authService.LoginWithGoogle(r.Context(), req.IDToken)
+		token, user, err := authService.LoginWithGoogle(ctx, req.IDToken)
 		if errors.Is(err, auth.ErrInvalidIDToken) {
 			// The reason stays in the logs: the response only says the token is
 			// invalid. This also covers failing to fetch Google's keys, which
 			// isn't the client's fault, but can't be told apart from a bad token
 			// reliably.
-			logger.WarnContext(r.Context(), "google login rejected", "err", err)
+			logger.WarnContext(ctx, "google login rejected", "err", err)
 		}
 		if err != nil {
 			return err
@@ -56,7 +57,10 @@ func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) apiHandle
 
 func handleLogout(authService *auth.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if err := authService.Logout(r.Context(), sessionFrom(r.Context()).SessionID); err != nil {
+		ctx := r.Context()
+		sessionID := sessionFrom(ctx).SessionID
+
+		if err := authService.Logout(ctx, sessionID); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)

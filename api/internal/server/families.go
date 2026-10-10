@@ -1,12 +1,10 @@
 package server
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/family"
@@ -46,12 +44,14 @@ type familyNameRequest struct {
 
 func handleCreateFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
 		var req familyNameRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		created, err := familyService.Create(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
+		created, err := familyService.Create(ctx, userID, req.Name)
 		if err != nil {
 			return err
 		}
@@ -65,13 +65,16 @@ type listFamiliesResponse struct {
 	Families []familyResponse `json:"families"`
 }
 
-func handleListFamilies(queries *db.Queries) apiHandler {
+func handleListFamilies(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		rows, err := queries.ListFamiliesForUser(r.Context(), sessionFrom(r.Context()).UserID)
+		ctx := r.Context()
+		userID := sessionFrom(ctx).UserID
+
+		families, err := familyService.ListForUser(ctx, userID)
 		if err != nil {
 			return err
 		}
-		return writeJSON(w, http.StatusOK, listFamiliesResponse{Families: mapSlice(rows, newFamilyResponse)})
+		return writeJSON(w, http.StatusOK, listFamiliesResponse{Families: mapSlice(families, newFamilyResponse)})
 	}
 }
 
@@ -80,62 +83,47 @@ type getFamilyResponse struct {
 	Members []memberResponse `json:"members"`
 }
 
-func handleGetFamily(queries *db.Queries) apiHandler {
+func handleGetFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		membership := familyMembershipFrom(r.Context())
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
 
-		familyRow, err := queries.GetFamily(r.Context(), membership.FamilyID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			// Deleted since requireFamilyMembership checked.
-			return family.ErrFamilyNotFound
-		}
+		familyRow, members, err := familyService.Get(ctx, actor)
 		if err != nil {
 			return err
 		}
-		members, err := queries.ListFamilyMembers(r.Context(), membership.FamilyID)
-		if err != nil {
-			return err
-		}
-
 		return writeJSON(w, http.StatusOK, getFamilyResponse{
-			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
+			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: actor.Role},
 			Members: mapSlice(members, newMemberResponse),
 		})
 	}
 }
 
-func handlePatchFamily(queries *db.Queries) apiHandler {
+func handlePatchFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if err := checkFamilyAdmin(r); err != nil {
-			return err
-		}
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
 		var req familyNameRequest
 		if err := decodeAndValidateRequest(w, r, &req); err != nil {
 			return err
 		}
 
-		membership := familyMembershipFrom(r.Context())
-		familyRow, err := queries.UpdateFamilyName(r.Context(), db.UpdateFamilyNameParams{ID: membership.FamilyID, Name: req.Name})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return family.ErrFamilyNotFound
-		}
+		renamed, err := familyService.Rename(ctx, actor, req.Name)
 		if err != nil {
 			return err
 		}
 		return writeJSON(w, http.StatusOK, familyEnvelope{
-			Family: familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
+			Family: familyResponse{ID: renamed.ID, Name: renamed.Name, Role: actor.Role},
 		})
 	}
 }
 
-// handleDeleteFamily deletes the family. Its memberships and all family-owned
-// data go with it through ON DELETE CASCADE.
-func handleDeleteFamily(queries *db.Queries) apiHandler {
+func handleDeleteFamily(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if err := checkFamilyAdmin(r); err != nil {
-			return err
-		}
-		if err := queries.DeleteFamily(r.Context(), familyMembershipFrom(r.Context()).FamilyID); err != nil {
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
+
+		if err := familyService.Delete(ctx, actor); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -163,10 +151,9 @@ type patchMemberResponse struct {
 
 func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if err := checkFamilyAdmin(r); err != nil {
-			return err
-		}
-		userID, err := memberIDFromPath(r)
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
+		targetID, err := memberIDFromPath(r)
 		if err != nil {
 			return err
 		}
@@ -175,7 +162,7 @@ func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 			return err
 		}
 
-		member, err := familyService.ChangeRole(r.Context(), familyMembershipFrom(r.Context()).FamilyID, userID, req.Role)
+		member, err := familyService.ChangeRole(ctx, actor, targetID, req.Role)
 		if err != nil {
 			return err
 		}
@@ -183,22 +170,16 @@ func handlePatchFamilyMember(familyService *family.Service) apiHandler {
 	}
 }
 
-// handleDeleteFamilyMember removes a member. Admins can remove anyone; any
-// member can remove themselves, which is leaving the family.
 func handleDeleteFamilyMember(familyService *family.Service) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID, err := memberIDFromPath(r)
+		ctx := r.Context()
+		actor := familyMembershipFrom(ctx)
+		targetID, err := memberIDFromPath(r)
 		if err != nil {
 			return err
 		}
-		membership := familyMembershipFrom(r.Context())
-		if userID != membership.UserID {
-			if err := checkFamilyAdmin(r); err != nil {
-				return err
-			}
-		}
 
-		if err := familyService.RemoveMember(r.Context(), membership.FamilyID, userID); err != nil {
+		if err := familyService.RemoveMember(ctx, actor, targetID); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)

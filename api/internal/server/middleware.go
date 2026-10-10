@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/lakaniemi/life-app/api/internal/auth"
 	"github.com/lakaniemi/life-app/api/internal/db"
@@ -143,14 +142,14 @@ func newRequireAuth(logger *slog.Logger, authService *auth.Service) middleware {
 }
 
 // familyMembershipFrom returns the caller's membership that
-// requireFamilyMembership stored. Only call it from handlers wrapped in
-// requireFamilyMembership.
+// requireFamilyMembership stored: the actor to pass to family.Service. Only
+// call it from handlers wrapped in requireFamilyMembership.
 func familyMembershipFrom(ctx context.Context) db.FamilyMember {
-	m, ok := ctx.Value(familyMembershipKey{}).(db.FamilyMember)
+	membership, ok := ctx.Value(familyMembershipKey{}).(db.FamilyMember)
 	if !ok {
 		panic("familyMembershipFrom: no membership in context; is the handler wrapped in requireFamilyMembership?")
 	}
-	return m
+	return membership
 }
 
 // newRequireFamilyMembership returns requireFamilyMembership, which passes the
@@ -160,43 +159,28 @@ func familyMembershipFrom(ctx context.Context) db.FamilyMember {
 // run after requireAuth.
 //
 // Every route under /families/{familyID} goes through it. It only checks
-// membership; handlers check the role with checkFamilyAdmin where an action
-// needs one.
-func newRequireFamilyMembership(logger *slog.Logger, queries *db.Queries) middleware {
+// membership; family.Service checks the role where an action needs one.
+func newRequireFamilyMembership(logger *slog.Logger, familyService *family.Service) middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			userID := sessionFrom(ctx).UserID
 			familyID, err := uuid.Parse(r.PathValue("familyID"))
 			if err != nil {
 				writeErrorResponse(w, r, logger, family.ErrFamilyNotFound)
 				return
 			}
 
-			membership, err := queries.GetFamilyMember(r.Context(), db.GetFamilyMemberParams{
-				FamilyID: familyID,
-				UserID:   sessionFrom(r.Context()).UserID,
-			})
-			if errors.Is(err, pgx.ErrNoRows) {
-				writeErrorResponse(w, r, logger, family.ErrFamilyNotFound)
-				return
-			}
+			membership, err := familyService.Membership(ctx, familyID, userID)
 			if err != nil {
 				writeErrorResponse(w, r, logger, err)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), familyMembershipKey{}, membership)
+			ctx = context.WithValue(ctx, familyMembershipKey{}, membership)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// checkFamilyAdmin returns a 403 error unless the caller is an admin of the
-// family.
-func checkFamilyAdmin(r *http.Request) error {
-	if familyMembershipFrom(r.Context()).Role != family.RoleAdmin {
-		return newAPIError(http.StatusForbidden, "forbidden", "only a family admin can do this")
-	}
-	return nil
 }
 
 // bearerToken extracts the token from "Authorization: Bearer <token>". The

@@ -53,6 +53,7 @@ var domainErrors = []struct {
 }{
 	{family.ErrFamilyNotFound, http.StatusNotFound, "not_found"},
 	{family.ErrFamilyMemberNotFound, http.StatusNotFound, "not_found"},
+	{family.ErrForbidden, http.StatusForbidden, "forbidden"},
 	// Rule violations are 409: the request is valid, but the family's current
 	// state doesn't allow it.
 	{family.ErrSoleAdmin, http.StatusConflict, "sole_admin"},

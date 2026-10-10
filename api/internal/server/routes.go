@@ -9,15 +9,17 @@ import (
 	"github.com/lakaniemi/life-app/api/internal/auth"
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/family"
+	"github.com/lakaniemi/life-app/api/internal/user"
 )
 
 func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) {
 	queries := db.New(pool)
 	authService := auth.NewService(logger, queries, verifier)
 	familyService := family.NewService(pool)
+	userService := user.NewService(queries)
 
 	requireAuth := newRequireAuth(logger, authService)
-	requireFamilyMembership := newRequireFamilyMembership(logger, queries)
+	requireFamilyMembership := newRequireFamilyMembership(logger, familyService)
 
 	mux.Handle("GET /health", handleHealth(logger, pool))
 
@@ -27,20 +29,20 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, veri
 		withMiddlewares(requireAuth)(handleLogout(authService)))
 
 	mux.Handle("GET /me",
-		withMiddlewares(requireAuth)(handleGetMe(queries)))
+		withMiddlewares(requireAuth)(handleGetMe(userService, familyService)))
 	mux.Handle("PATCH /me",
-		withMiddlewares(requireAuth)(handlePatchMe(queries)))
+		withMiddlewares(requireAuth)(handlePatchMe(userService)))
 
 	mux.Handle("POST /families",
 		withMiddlewares(requireAuth)(handleCreateFamily(familyService)))
 	mux.Handle("GET /families",
-		withMiddlewares(requireAuth)(handleListFamilies(queries)))
+		withMiddlewares(requireAuth)(handleListFamilies(familyService)))
 	mux.Handle("GET /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handleGetFamily(queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleGetFamily(familyService)))
 	mux.Handle("PATCH /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamily(queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamily(familyService)))
 	mux.Handle("DELETE /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamily(queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamily(familyService)))
 	mux.Handle("PATCH /families/{familyID}/members/{userID}",
 		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamilyMember(familyService)))
 	mux.Handle("DELETE /families/{familyID}/members/{userID}",
