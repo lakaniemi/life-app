@@ -16,25 +16,33 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, veri
 	authService := auth.NewService(logger, queries, verifier)
 	familyService := family.NewService(pool)
 
+	requireAuth := newRequireAuth(logger, authService)
+	requireFamilyMembership := newRequireFamilyMembership(logger, queries)
+
 	mux.Handle("GET /health", handleHealth(logger, pool))
 
 	mux.Handle("POST /auth/nonce", handleCreateNonce(logger, authService))
 	mux.Handle("POST /auth/google", handleGoogleLogin(logger, authService))
-	mux.Handle("POST /auth/logout", requireAuth(logger, authService, handleLogout(logger, authService)))
+	mux.Handle("POST /auth/logout",
+		withMiddlewares(requireAuth)(handleLogout(logger, authService)))
 
-	mux.Handle("GET /me", requireAuth(logger, authService, handleGetMe(logger, queries)))
-	mux.Handle("PATCH /me", requireAuth(logger, authService, handlePatchMe(logger, queries)))
+	mux.Handle("GET /me",
+		withMiddlewares(requireAuth)(handleGetMe(logger, queries)))
+	mux.Handle("PATCH /me",
+		withMiddlewares(requireAuth)(handlePatchMe(logger, queries)))
 
-	mux.Handle("POST /families", requireAuth(logger, authService, handleCreateFamily(logger, familyService)))
-	mux.Handle("GET /families", requireAuth(logger, authService, handleListFamilies(logger, queries)))
+	mux.Handle("POST /families",
+		withMiddlewares(requireAuth)(handleCreateFamily(logger, familyService)))
+	mux.Handle("GET /families",
+		withMiddlewares(requireAuth)(handleListFamilies(logger, queries)))
 	mux.Handle("GET /families/{familyID}",
-		requireAuth(logger, authService, requireFamilyMembership(logger, queries, handleGetFamily(logger, queries))))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleGetFamily(logger, queries)))
 	mux.Handle("PATCH /families/{familyID}",
-		requireAuth(logger, authService, requireFamilyMembership(logger, queries, handlePatchFamily(logger, queries))))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamily(logger, queries)))
 	mux.Handle("DELETE /families/{familyID}",
-		requireAuth(logger, authService, requireFamilyMembership(logger, queries, handleDeleteFamily(logger, queries))))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamily(logger, queries)))
 	mux.Handle("PATCH /families/{familyID}/members/{userID}",
-		requireAuth(logger, authService, requireFamilyMembership(logger, queries, handlePatchFamilyMember(logger, familyService))))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamilyMember(logger, familyService)))
 	mux.Handle("DELETE /families/{familyID}/members/{userID}",
-		requireAuth(logger, authService, requireFamilyMembership(logger, queries, handleDeleteFamilyMember(logger, familyService))))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamilyMember(logger, familyService)))
 }

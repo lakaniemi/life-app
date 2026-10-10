@@ -16,5 +16,5 @@ import (
 func New(logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(mux, logger, pool, verifier)
-	return logRequests(logger, mux)
+	return newLogRequests(logger)(mux)
 }
