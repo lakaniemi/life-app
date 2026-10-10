@@ -28,15 +28,20 @@ type meResponse struct {
 
 func handleGetMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := queries.GetUserByID(r.Context(), sessionFrom(r.Context()).UserID)
+		userID := sessionFrom(r.Context()).UserID
+		user, err := queries.GetUserByID(r.Context(), userID)
+		if err != nil {
+			writeInternalError(w, r, logger, err)
+			return
+		}
+		families, err := queries.ListFamiliesForUser(r.Context(), userID)
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
 		}
 		writeJSON(w, r, logger, http.StatusOK, meResponse{
-			User: newUserResponse(user),
-			// Non-nil, so it encodes as [] rather than null.
-			Families: []familyResponse{},
+			User:     newUserResponse(user),
+			Families: newFamilyResponses(families),
 		})
 	})
 }
