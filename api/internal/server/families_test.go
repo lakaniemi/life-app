@@ -1,12 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/family"
@@ -129,9 +128,7 @@ func TestFamilyRoutesAuthorization(t *testing.T) {
 
 	// The requests above must not have changed anything.
 	want := map[string]string{"Alice": family.RoleAdmin, "Bob": family.RoleMember}
-	if diff := cmp.Diff(want, fixture.memberRoles(t, "Alice")); diff != "" {
-		t.Errorf("members mismatch (-want +got):\n%s", diff)
-	}
+	checkDiff(t, "members", want, fixture.memberRoles(t, "Alice"))
 }
 
 func TestCreateFamily(t *testing.T) {
@@ -174,9 +171,7 @@ func TestCreateFamily(t *testing.T) {
 
 			checkStatus(t, rec, http.StatusBadRequest)
 			want := []fieldError{{Field: "name", Rule: tt.wantRule}}
-			if diff := cmp.Diff(want, decode[errorResponse](t, rec).Error.Fields); diff != "" {
-				t.Errorf("name %q: fields mismatch (-want +got):\n%s", tt.name, diff)
-			}
+			checkDiff(t, fmt.Sprintf("name %q: fields", tt.name), want, decode[errorResponse](t, rec).Error.Fields)
 		}
 	})
 }
@@ -204,9 +199,7 @@ func TestListFamilies(t *testing.T) {
 			{ID: joneses.ID, Name: "Joneses", Role: family.RoleAdmin},
 			{ID: smiths.ID, Name: "Smiths", Role: family.RoleMember},
 		}}
-		if diff := cmp.Diff(want, decode[listFamiliesResponse](t, rec)); diff != "" {
-			t.Errorf("body mismatch (-want +got):\n%s", diff)
-		}
+		checkDiff(t, "body", want, decode[listFamiliesResponse](t, rec))
 	})
 
 	t.Run("is an empty list without families", func(t *testing.T) {
@@ -217,9 +210,7 @@ func TestListFamilies(t *testing.T) {
 		rec := server.do(t, http.MethodGet, "/families", token, nil)
 
 		checkStatus(t, rec, http.StatusOK)
-		if diff := cmp.Diff(map[string]any{"families": []any{}}, decode[map[string]any](t, rec)); diff != "" {
-			t.Errorf("body mismatch (-want +got):\n%s", diff)
-		}
+		checkDiff(t, "body", map[string]any{"families": []any{}}, decode[map[string]any](t, rec))
 	})
 }
 
@@ -232,13 +223,9 @@ func TestGetFamily(t *testing.T) {
 	checkStatus(t, rec, http.StatusOK)
 	got := decode[getFamilyResponse](t, rec)
 	wantFamily := familyResponse{ID: fixture.family.ID, Name: "Smiths", Role: family.RoleMember}
-	if diff := cmp.Diff(wantFamily, got.Family); diff != "" {
-		t.Errorf("family mismatch (-want +got):\n%s", diff)
-	}
+	checkDiff(t, "family", wantFamily, got.Family)
 	wantRoles := map[string]string{"Alice": family.RoleAdmin, "Bob": family.RoleMember}
-	if diff := cmp.Diff(wantRoles, rolesByName(got.Members)); diff != "" {
-		t.Errorf("members mismatch (-want +got):\n%s", diff)
-	}
+	checkDiff(t, "members", wantRoles, rolesByName(got.Members))
 }
 
 func TestPatchFamily(t *testing.T) {
@@ -252,9 +239,7 @@ func TestPatchFamily(t *testing.T) {
 
 		checkStatus(t, rec, http.StatusOK)
 		want := familyEnvelope{Family: familyResponse{ID: fixture.family.ID, Name: "Smithsons", Role: family.RoleAdmin}}
-		if diff := cmp.Diff(want, decode[familyEnvelope](t, rec)); diff != "" {
-			t.Errorf("body mismatch (-want +got):\n%s", diff)
-		}
+		checkDiff(t, "body", want, decode[familyEnvelope](t, rec))
 		rec = fixture.do(t, http.MethodGet, fixture.familyPath(), "Bob", nil)
 		if got := decode[getFamilyResponse](t, rec).Family.Name; got != "Smithsons" {
 			t.Errorf("GET name = %q, want %q", got, "Smithsons")
@@ -324,9 +309,7 @@ func TestPatchFamilyMember(t *testing.T) {
 			t.Errorf("member = %+v, want Bob as admin", member)
 		}
 		want := map[string]string{"Alice": family.RoleAdmin, "Bob": family.RoleAdmin}
-		if diff := cmp.Diff(want, fixture.memberRoles(t, "Alice")); diff != "" {
-			t.Errorf("members mismatch (-want +got):\n%s", diff)
-		}
+		checkDiff(t, "members", want, fixture.memberRoles(t, "Alice"))
 	})
 
 	tests := []struct {
@@ -381,9 +364,7 @@ func TestPatchFamilyMember(t *testing.T) {
 			if tt.wantCode != "" {
 				checkErrorCode(t, rec, tt.wantCode)
 			}
-			if diff := cmp.Diff(tt.wantRoles, fixture.memberRoles(t, "Bob")); diff != "" {
-				t.Errorf("members mismatch (-want +got):\n%s", diff)
-			}
+			checkDiff(t, "members", tt.wantRoles, fixture.memberRoles(t, "Bob"))
 		})
 	}
 }
@@ -456,9 +437,7 @@ func TestDeleteFamilyMember(t *testing.T) {
 			if tt.wantCode != "" {
 				checkErrorCode(t, rec, tt.wantCode)
 			}
-			if diff := cmp.Diff(tt.wantRoles, fixture.memberRoles(t, tt.wantRolesAs)); diff != "" {
-				t.Errorf("members mismatch (-want +got):\n%s", diff)
-			}
+			checkDiff(t, "members", tt.wantRoles, fixture.memberRoles(t, tt.wantRolesAs))
 		})
 	}
 }

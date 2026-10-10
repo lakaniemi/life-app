@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -126,6 +127,15 @@ func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 		t.Fatalf("decode response body %q: %v", rec.Body.String(), err)
 	}
 	return v
+}
+
+// checkDiff reports a mismatch between want and got as a diff. label says
+// what is compared, e.g. "body".
+func checkDiff[T any](t *testing.T, label string, want, got T) {
+	t.Helper()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("%s mismatch (-want +got):\n%s", label, diff)
+	}
 }
 
 func checkStatus(t *testing.T, rec *httptest.ResponseRecorder, want int) {

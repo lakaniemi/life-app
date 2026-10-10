@@ -1,11 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/lakaniemi/life-app/api/internal/family"
 )
@@ -25,9 +24,7 @@ func TestGetMe(t *testing.T) {
 		"user":     map[string]any{"id": user.ID.String(), "name": "Alice"},
 		"families": []any{},
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("body mismatch (-want +got):\n%s", diff)
-	}
+	checkDiff(t, "body", want, got)
 }
 
 func TestGetMeListsFamilies(t *testing.T) {
@@ -41,9 +38,7 @@ func TestGetMeListsFamilies(t *testing.T) {
 
 	checkStatus(t, rec, http.StatusOK)
 	want := []familyResponse{{ID: smiths.ID, Name: "Smiths", Role: family.RoleMember}}
-	if diff := cmp.Diff(want, decode[meResponse](t, rec).Families); diff != "" {
-		t.Errorf("families mismatch (-want +got):\n%s", diff)
-	}
+	checkDiff(t, "families", want, decode[meResponse](t, rec).Families)
 }
 
 func TestPatchMe(t *testing.T) {
@@ -58,9 +53,7 @@ func TestPatchMe(t *testing.T) {
 
 		checkStatus(t, rec, http.StatusOK)
 		want := patchMeResponse{User: userResponse{ID: user.ID, Name: "Alicia"}}
-		if diff := cmp.Diff(want, decode[patchMeResponse](t, rec)); diff != "" {
-			t.Errorf("body mismatch (-want +got):\n%s", diff)
-		}
+		checkDiff(t, "body", want, decode[patchMeResponse](t, rec))
 		me := decode[meResponse](t, server.do(t, http.MethodGet, "/me", token, nil))
 		if me.User.Name != "Alicia" {
 			t.Errorf("GET /me name = %q, want %q", me.User.Name, "Alicia")
@@ -84,9 +77,7 @@ func TestPatchMe(t *testing.T) {
 
 			checkStatus(t, rec, http.StatusBadRequest)
 			want := []fieldError{{Field: "name", Rule: tt.wantRule}}
-			if diff := cmp.Diff(want, decode[errorResponse](t, rec).Error.Fields); diff != "" {
-				t.Errorf("name %q: fields mismatch (-want +got):\n%s", tt.name, diff)
-			}
+			checkDiff(t, fmt.Sprintf("name %q: fields", tt.name), want, decode[errorResponse](t, rec).Error.Fields)
 		}
 	})
 
