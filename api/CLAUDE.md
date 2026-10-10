@@ -8,6 +8,7 @@
   - Create a domain package when there's real logic, such as rules, transactions or multi-step flows. A plain CRUD handler calls `db` directly.
   - Adapters for external services go in a subpackage of the domain that uses them (e.g. `internal/auth/google`). The domain depends on them through a small interface it defines itself (`auth.TokenVerifier`).
   - Inside a package, organize with file names: one file per route group or concern.
+- **Naming:** the further a name is used from where it's declared, the more descriptive it is. One-letter names only for receivers, `w`/`r` in handlers, `t`/`tt` in tests, loop indices, and variables that live a few lines. Don't name variables after domain packages (`family`, `auth`), since that shadows the package; say what they hold instead (`familyRow`, `familyService`).
 - **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) http.Handler` constructors that take their dependencies as arguments, with no globals.
 - **Adding an endpoint:**
   1. Write the handler in the route group's file in `internal/server` (e.g. `auth.go`, `me.go`), with any domain logic in its domain package.
