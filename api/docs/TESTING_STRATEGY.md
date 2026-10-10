@@ -19,8 +19,9 @@ In priority order:
      - Decode the JSON body and compare it with `checkDiff` (a `cmp.Diff` wrapper). Use `cmpopts` with `cmp.Diff` directly to ignore generated IDs and timestamps.
    - **Side effects:** check a write through a follow-up request when the API exposes the result. Query the database only when it doesn't.
 2. **Unit tests.** For pure functions with real branching, such as config loading, validation and domain calculations. No HTTP and no database.
-3. **Direct query tests.** Only for non-trivial SQL that is awkward to reach through HTTP, such as aggregations or tricky NULL and ordering semantics. A plain CRUD query is covered by the endpoint that uses it.
-4. **Migrations** need no tests of their own. Every database test applies all of them.
+3. **Domain tests against the database.** Only for behavior endpoints can't reach deterministically, such as a concurrent change landing between the middleware and a service call (e.g. `internal/family`'s stale-role test).
+4. **Direct query tests.** Only for non-trivial SQL that is awkward to reach through HTTP, such as aggregations or tricky NULL and ordering semantics. A plain CRUD query is covered by the endpoint that uses it.
+5. **Migrations** need no tests of their own. Every database test applies all of them.
 
 ## Per-endpoint checklist
 
