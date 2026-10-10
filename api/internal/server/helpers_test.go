@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/lakaniemi/life-app/api/internal/auth"
@@ -99,6 +100,23 @@ func (s testServer) seedSession(t *testing.T, user db.User, expiresAt time.Time)
 		t.Fatalf("create session: %v", err)
 	}
 	return session, token
+}
+
+func (s testServer) seedFamily(t *testing.T, name string) db.Family {
+	t.Helper()
+	created, err := s.queries.CreateFamily(t.Context(), name)
+	if err != nil {
+		t.Fatalf("create family: %v", err)
+	}
+	return created
+}
+
+func (s testServer) seedMember(t *testing.T, familyID uuid.UUID, user db.User, role string) {
+	t.Helper()
+	err := s.queries.AddFamilyMember(t.Context(), db.AddFamilyMemberParams{FamilyID: familyID, UserID: user.ID, Role: role})
+	if err != nil {
+		t.Fatalf("add family member: %v", err)
+	}
 }
 
 func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
