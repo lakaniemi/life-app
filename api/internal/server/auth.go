@@ -35,10 +35,7 @@ type googleLoginResponse struct {
 func handleGoogleLogin(logger *slog.Logger, authService *auth.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req googleLoginRequest
-		if !decodeJSON(w, r, logger, &req) {
-			return
-		}
-		if !validateRequest(w, r, logger, req) {
+		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 

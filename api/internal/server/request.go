@@ -7,12 +7,33 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/go-playground/mold/v4/modifiers"
 	"github.com/go-playground/validator/v10"
 )
 
-// validate is package state, unlike handler dependencies, because it only
-// caches struct metadata and is safe for concurrent use (like a regexp).
-var validate = newValidator()
+// conform and validate are package state, unlike handler dependencies, because
+// they only cache struct metadata and are safe for concurrent use (like a
+// regexp).
+var (
+	conform  = modifiers.New()
+	validate = newValidator()
+)
+
+// decodeAndValidateRequest decodes the request body into v, which must be a
+// pointer to a struct, applies its `mod` tags (e.g. trim) and then checks its
+// `validate` tags. Normalizing first means "  " fails "required". It reports
+// whether v is ready to use; on false the response is written.
+func decodeAndValidateRequest(w http.ResponseWriter, r *http.Request, logger *slog.Logger, v any) bool {
+	if !decodeJSON(w, r, logger, v) {
+		return false
+	}
+	if err := conform.Struct(r.Context(), v); err != nil {
+		// A misuse, such as an unknown tag or a non-pointer v.
+		writeInternalError(w, r, logger, err)
+		return false
+	}
+	return validateRequest(w, r, logger, v)
+}
 
 func newValidator() *validator.Validate {
 	v := validator.New(validator.WithRequiredStructEnabled())

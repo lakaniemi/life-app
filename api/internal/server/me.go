@@ -3,7 +3,6 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 
@@ -47,7 +46,7 @@ func handleGetMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 }
 
 type patchMeRequest struct {
-	Name string `json:"name" validate:"required,max=100"`
+	Name string `json:"name" mod:"trim" validate:"required,max=100"`
 }
 
 type patchMeResponse struct {
@@ -57,12 +56,7 @@ type patchMeResponse struct {
 func handlePatchMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req patchMeRequest
-		if !decodeJSON(w, r, logger, &req) {
-			return
-		}
-		// Trimmed before validating, so a blank name fails "required".
-		req.Name = strings.TrimSpace(req.Name)
-		if !validateRequest(w, r, logger, req) {
+		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 
