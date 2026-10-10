@@ -37,14 +37,8 @@ type familyResponse struct {
 	Role string    `json:"role"`
 }
 
-// newFamilyResponses returns a non-nil slice, so an empty list encodes as []
-// rather than null.
-func newFamilyResponses(rows []db.ListFamiliesForUserRow) []familyResponse {
-	families := make([]familyResponse, len(rows))
-	for i, f := range rows {
-		families[i] = familyResponse{ID: f.ID, Name: f.Name, Role: f.Role}
-	}
-	return families
+func newFamilyResponse(row db.ListFamiliesForUserRow) familyResponse {
+	return familyResponse{ID: row.ID, Name: row.Name, Role: row.Role}
 }
 
 type memberResponse struct {
@@ -54,8 +48,8 @@ type memberResponse struct {
 	JoinedAt time.Time `json:"joinedAt"`
 }
 
-func newMemberResponse(m db.ListFamilyMembersRow) memberResponse {
-	return memberResponse{ID: m.UserID, Name: m.Name, Role: m.Role, JoinedAt: m.JoinedAt}
+func newMemberResponse(member db.ListFamilyMembersRow) memberResponse {
+	return memberResponse{ID: member.UserID, Name: member.Name, Role: member.Role, JoinedAt: member.JoinedAt}
 }
 
 // familyEnvelope is the body of responses that return a single family.
@@ -96,7 +90,7 @@ func handleListFamilies(logger *slog.Logger, queries *db.Queries) http.Handler {
 			writeInternalError(w, r, logger, err)
 			return
 		}
-		writeJSON(w, r, logger, http.StatusOK, listFamiliesResponse{Families: newFamilyResponses(rows)})
+		writeJSON(w, r, logger, http.StatusOK, listFamiliesResponse{Families: mapSlice(rows, newFamilyResponse)})
 	})
 }
 
@@ -119,19 +113,15 @@ func handleGetFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 			writeInternalError(w, r, logger, err)
 			return
 		}
-		rows, err := queries.ListFamilyMembers(r.Context(), membership.FamilyID)
+		members, err := queries.ListFamilyMembers(r.Context(), membership.FamilyID)
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
 		}
 
-		members := make([]memberResponse, len(rows))
-		for i, m := range rows {
-			members[i] = newMemberResponse(m)
-		}
 		writeJSON(w, r, logger, http.StatusOK, getFamilyResponse{
 			Family:  familyResponse{ID: familyRow.ID, Name: familyRow.Name, Role: membership.Role},
-			Members: members,
+			Members: mapSlice(members, newMemberResponse),
 		})
 	})
 }
