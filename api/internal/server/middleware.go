@@ -9,8 +9,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/lakaniemi/life-app/api/internal/auth"
+	"github.com/lakaniemi/life-app/api/internal/db"
+	"github.com/lakaniemi/life-app/api/internal/family"
 )
 
 type statusRecorder struct {
@@ -52,14 +55,17 @@ type authSession struct {
 	SessionID uuid.UUID
 }
 
-// ctxKey is unexported, so no other package can read or overwrite the value
-// stored under it.
-type ctxKey struct{}
+// Context keys are unexported types, so no other package can read or
+// overwrite the values stored under them.
+type (
+	sessionKey          struct{}
+	familyMembershipKey struct{}
+)
 
 // sessionFrom returns the session requireAuth stored. Only call it from
 // handlers wrapped in requireAuth.
 func sessionFrom(ctx context.Context) authSession {
-	s, ok := ctx.Value(ctxKey{}).(authSession)
+	s, ok := ctx.Value(sessionKey{}).(authSession)
 	if !ok {
 		panic("sessionFrom: no session in context; is the handler wrapped in requireAuth?")
 	}
@@ -88,9 +94,64 @@ func requireAuth(logger *slog.Logger, authService *auth.Service, next http.Handl
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ctxKey{}, authSession{UserID: session.UserID, SessionID: session.ID})
+		ctx := context.WithValue(r.Context(), sessionKey{}, authSession{UserID: session.UserID, SessionID: session.ID})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// familyMembershipFrom returns the caller's membership that
+// requireFamilyMembership stored. Only call it from handlers wrapped in
+// requireFamilyMembership.
+func familyMembershipFrom(ctx context.Context) db.FamilyMember {
+	m, ok := ctx.Value(familyMembershipKey{}).(db.FamilyMember)
+	if !ok {
+		panic("familyMembershipFrom: no membership in context; is the handler wrapped in requireFamilyMembership?")
+	}
+	return m
+}
+
+// requireFamilyMembership passes the request to next, with the caller's
+// membership in the context, only if the caller belongs to the family in the
+// path's {familyID}. Otherwise it responds 404 rather than 403, so outsiders
+// can't learn whether a family exists. Wrap it in requireAuth.
+//
+// Every route under /families/{familyID} goes through it. It only checks
+// membership; handlers check the role with checkFamilyAdmin where an action
+// needs one.
+func requireFamilyMembership(logger *slog.Logger, queries *db.Queries, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		familyID, err := uuid.Parse(r.PathValue("familyID"))
+		if err != nil {
+			writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
+			return
+		}
+
+		membership, err := queries.GetFamilyMember(r.Context(), db.GetFamilyMemberParams{
+			FamilyID: familyID,
+			UserID:   sessionFrom(r.Context()).UserID,
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
+			return
+		}
+		if err != nil {
+			writeInternalError(w, r, logger, err)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), familyMembershipKey{}, membership)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// checkFamilyAdmin responds 403 unless the caller is an admin of the family.
+// It reports whether they are; on false the response is written.
+func checkFamilyAdmin(w http.ResponseWriter, r *http.Request, logger *slog.Logger) bool {
+	if familyMembershipFrom(r.Context()).Role != family.RoleAdmin {
+		writeError(w, r, logger, http.StatusForbidden, "forbidden", "only a family admin can do this")
+		return false
+	}
+	return true
 }
 
 // bearerToken extracts the token from "Authorization: Bearer <token>". The
