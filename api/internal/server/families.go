@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,32 +64,17 @@ type familyEnvelope struct {
 }
 
 type familyNameRequest struct {
-	Name string `json:"name" validate:"required,max=100"`
-}
-
-// decodeFamilyName decodes, trims and validates a familyNameRequest. On false
-// the response is written.
-func decodeFamilyName(w http.ResponseWriter, r *http.Request, logger *slog.Logger) (string, bool) {
-	var req familyNameRequest
-	if !decodeJSON(w, r, logger, &req) {
-		return "", false
-	}
-	// Trimmed before validating, so a blank name fails "required".
-	req.Name = strings.TrimSpace(req.Name)
-	if !validateRequest(w, r, logger, req) {
-		return "", false
-	}
-	return req.Name, true
+	Name string `json:"name" mod:"trim" validate:"required,max=100"`
 }
 
 func handleCreateFamily(logger *slog.Logger, families *family.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name, ok := decodeFamilyName(w, r, logger)
-		if !ok {
+		var req familyNameRequest
+		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 
-		created, err := families.Create(r.Context(), sessionFrom(r.Context()).UserID, name)
+		created, err := families.Create(r.Context(), sessionFrom(r.Context()).UserID, req.Name)
 		if err != nil {
 			writeInternalError(w, r, logger, err)
 			return
@@ -157,13 +141,13 @@ func handlePatchFamily(logger *slog.Logger, queries *db.Queries) http.Handler {
 		if !checkFamilyAdmin(w, r, logger) {
 			return
 		}
-		name, ok := decodeFamilyName(w, r, logger)
-		if !ok {
+		var req familyNameRequest
+		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 
 		membership := familyMembershipFrom(r.Context())
-		f, err := queries.UpdateFamilyName(r.Context(), db.UpdateFamilyNameParams{ID: membership.FamilyID, Name: name})
+		f, err := queries.UpdateFamilyName(r.Context(), db.UpdateFamilyNameParams{ID: membership.FamilyID, Name: req.Name})
 		if errors.Is(err, pgx.ErrNoRows) {
 			writeError(w, r, logger, http.StatusNotFound, "not_found", "family not found")
 			return
@@ -222,10 +206,7 @@ func handlePatchFamilyMember(logger *slog.Logger, families *family.Service) http
 			return
 		}
 		var req patchMemberRequest
-		if !decodeJSON(w, r, logger, &req) {
-			return
-		}
-		if !validateRequest(w, r, logger, req) {
+		if !decodeAndValidateRequest(w, r, logger, &req) {
 			return
 		}
 
