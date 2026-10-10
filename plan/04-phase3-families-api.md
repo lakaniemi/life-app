@@ -28,7 +28,7 @@ Write it once here and reuse it everywhere.
 
 ## Membership rules
 
-The rules from [01-data-model.md](01-data-model.md) are enforced in a transaction that first locks the family's member rows with `SELECT … FOR UPDATE`, then counts admins and members, then writes. Without the lock, two admins leaving at the same moment could both pass the "another admin remains" check.
+The rules from [01-data-model.md](01-data-model.md) are enforced in a transaction that first locks the **family row** with `SELECT … FOR UPDATE`, then reads and counts the members, then writes. Without the lock, two admins leaving at the same moment could both pass the "another admin remains" check. The family row rather than the member rows, because it also blocks concurrent joins (through the foreign key) and can't deadlock. The `internal/family` package doc has the full reasoning.
 
 Rule violations return **409 Conflict**: the request is valid, but the family's current state doesn't allow it. The JSON error body includes a machine-readable code so the app can show the right message.
 
