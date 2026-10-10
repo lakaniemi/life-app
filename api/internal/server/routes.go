@@ -21,28 +21,28 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, veri
 
 	mux.Handle("GET /health", handleHealth(logger, pool))
 
-	mux.Handle("POST /auth/nonce", handleCreateNonce(logger, authService))
+	mux.Handle("POST /auth/nonce", handleCreateNonce(authService))
 	mux.Handle("POST /auth/google", handleGoogleLogin(logger, authService))
 	mux.Handle("POST /auth/logout",
-		withMiddlewares(requireAuth)(handleLogout(logger, authService)))
+		withMiddlewares(requireAuth)(handleLogout(authService)))
 
 	mux.Handle("GET /me",
-		withMiddlewares(requireAuth)(handleGetMe(logger, queries)))
+		withMiddlewares(requireAuth)(handleGetMe(queries)))
 	mux.Handle("PATCH /me",
-		withMiddlewares(requireAuth)(handlePatchMe(logger, queries)))
+		withMiddlewares(requireAuth)(handlePatchMe(queries)))
 
 	mux.Handle("POST /families",
-		withMiddlewares(requireAuth)(handleCreateFamily(logger, familyService)))
+		withMiddlewares(requireAuth)(handleCreateFamily(familyService)))
 	mux.Handle("GET /families",
-		withMiddlewares(requireAuth)(handleListFamilies(logger, queries)))
+		withMiddlewares(requireAuth)(handleListFamilies(queries)))
 	mux.Handle("GET /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handleGetFamily(logger, queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleGetFamily(queries)))
 	mux.Handle("PATCH /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamily(logger, queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamily(queries)))
 	mux.Handle("DELETE /families/{familyID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamily(logger, queries)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamily(queries)))
 	mux.Handle("PATCH /families/{familyID}/members/{userID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamilyMember(logger, familyService)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamilyMember(familyService)))
 	mux.Handle("DELETE /families/{familyID}/members/{userID}",
-		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamilyMember(logger, familyService)))
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamilyMember(familyService)))
 }

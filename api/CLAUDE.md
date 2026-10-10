@@ -4,17 +4,23 @@
 - **Layout:** `cmd/api` (server), `cmd/migrate` (migrations) and `cmd/devsession` (local dev sessions, not shipped in the image) are entrypoints and only do wiring. Never add a dev-only sign-in route to the API; local auth goes through `cmd/devsession`. All other code lives under `internal/`, which the compiler makes unimportable from outside this module. No `pkg/`.
 - **Packages by responsibility, not by layer.** No `handlers/`, `services/` or `utils/` packages.
   - `internal/server` is the whole HTTP layer: routes, handlers, middleware and JSON helpers, all unexported.
-  - Domain logic goes in packages named for what they provide (e.g. `internal/auth`). They don't import `net/http`, and they report caller mistakes as sentinel errors, which handlers map to status codes.
+  - Domain logic goes in packages named for what they provide (e.g. `internal/auth`). They don't import `net/http`, and they report caller mistakes as sentinel errors, which `internal/server` maps to status codes.
   - Create a domain package when there's real logic, such as rules, transactions or multi-step flows. A plain CRUD handler calls `db` directly.
   - Adapters for external services go in a subpackage of the domain that uses them (e.g. `internal/auth/google`). The domain depends on them through a small interface it defines itself (`auth.TokenVerifier`).
   - Inside a package, organize with file names: one file per route group or concern.
 - **Naming:** the further a name is used from where it's declared, the more descriptive it is. One-letter names only for receivers, `w`/`r` in handlers, `t`/`tt` in tests, loop indices, and variables that live a few lines. Don't name variables after domain packages (`family`, `auth`), since that shadows the package; say what they hold instead (`familyRow`, `familyService`).
-- **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) http.Handler` constructors that take their dependencies as arguments, with no globals.
+- **Routes** are all registered in `internal/server/routes.go`. Handlers are `handleX(deps...) apiHandler` constructors that take their dependencies as arguments, with no globals.
+- **Errors:** an `apiHandler` returns its errors instead of writing error responses, and its `ServeHTTP` maps them in `writeErrorResponse` (`internal/server/errors.go`):
+  - an `*apiError` (`newAPIError(status, code, message)`) for failures the HTTP layer decides, such as a bad body;
+  - a domain sentinel through the `domainErrors` table, where new sentinels are added;
+  - anything else becomes a logged 500 that doesn't leak details.
+
+  Return an error only before writing anything. `return writeJSON(...)` is safe, since `writeJSON` encodes before it sends. Middlewares stay plain `http.Handler`s and call `writeErrorResponse` themselves.
 - **Adding an endpoint:**
   1. Write the handler in the route group's file in `internal/server` (e.g. `auth.go`, `me.go`), with any domain logic in its domain package.
   2. Register it in `routes.go`.
-  3. For a request body, declare normalization in go-playground/mold `mod` struct tags (e.g. `mod:"trim"` on user-entered text) and rules in go-playground/validator `validate` tags on the request struct. Then call `decodeAndValidateRequest(w, r, logger, &req)`, which decodes, normalizes and validates in that order. It writes the error response itself and returns false on failure. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
-  4. For a route under `/families/{familyID}`, register it with `withMiddlewares(requireAuth, requireFamilyMembership)(handler)`, read the caller's membership with `familyMembershipFrom`, and use `checkFamilyAdmin` for admin-only actions. Every query on family-owned data filters by that `familyID`.
+  3. For a request body, declare normalization in go-playground/mold `mod` struct tags (e.g. `mod:"trim"` on user-entered text) and rules in go-playground/validator `validate` tags on the request struct. Then return the error from `decodeAndValidateRequest(w, r, &req)`, which decodes, normalizes and validates in that order. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
+  4. For a route under `/families/{familyID}`, register it with `withMiddlewares(requireAuth, requireFamilyMembership)(handler)`, read the caller's membership with `familyMembershipFrom`, and return the error from `checkFamilyAdmin(r)` for admin-only actions. Every query on family-owned data filters by that `familyID`.
   5. Add endpoint tests next to it. Add a family-scoped route to `TestFamilyRoutesAuthorization` too.
 - **Tests:** follow `docs/TESTING_STRATEGY.md`, including its per-endpoint checklist. Endpoint tests against a real database are the default; tests that need one call `dbtest.New(t)`. Don't test generated code.
 - **Config:** `cmd/*` calls `config.Load()` once and passes the resulting `config.Config` down. Nothing else reads env vars, except `internal/dbtest` (`TEST_DATABASE_URL`), because tests have no `main`. `ENVIRONMENT` only selects an entry in the `defaults` map in `config.go` and isn't exposed, so no code branches on dev vs prod. Add a new setting as a `Config` field, with defaults in that map where they make sense.

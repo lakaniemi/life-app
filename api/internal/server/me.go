@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -25,24 +24,22 @@ type meResponse struct {
 	Families []familyResponse `json:"families"`
 }
 
-func handleGetMe(logger *slog.Logger, queries *db.Queries) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleGetMe(queries *db.Queries) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		userID := sessionFrom(r.Context()).UserID
 		user, err := queries.GetUserByID(r.Context(), userID)
 		if err != nil {
-			writeInternalError(w, r, logger, err)
-			return
+			return err
 		}
 		families, err := queries.ListFamiliesForUser(r.Context(), userID)
 		if err != nil {
-			writeInternalError(w, r, logger, err)
-			return
+			return err
 		}
-		writeJSON(w, r, logger, http.StatusOK, meResponse{
+		return writeJSON(w, http.StatusOK, meResponse{
 			User:     newUserResponse(user),
 			Families: mapSlice(families, newFamilyResponse),
 		})
-	})
+	}
 }
 
 type patchMeRequest struct {
@@ -53,11 +50,11 @@ type patchMeResponse struct {
 	User userResponse `json:"user"`
 }
 
-func handlePatchMe(logger *slog.Logger, queries *db.Queries) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handlePatchMe(queries *db.Queries) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		var req patchMeRequest
-		if !decodeAndValidateRequest(w, r, logger, &req) {
-			return
+		if err := decodeAndValidateRequest(w, r, &req); err != nil {
+			return err
 		}
 
 		user, err := queries.UpdateUserName(r.Context(), db.UpdateUserNameParams{
@@ -65,9 +62,8 @@ func handlePatchMe(logger *slog.Logger, queries *db.Queries) http.Handler {
 			Name: req.Name,
 		})
 		if err != nil {
-			writeInternalError(w, r, logger, err)
-			return
+			return err
 		}
-		writeJSON(w, r, logger, http.StatusOK, patchMeResponse{User: newUserResponse(user)})
-	})
+		return writeJSON(w, http.StatusOK, patchMeResponse{User: newUserResponse(user)})
+	}
 }
