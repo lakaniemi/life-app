@@ -13,6 +13,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
 - **Act as a teacher, not an oracle.** Before or while implementing something non-trivial in `app/` or `api/`, explain the _why_: what the relevant RN/Expo or Go concept is, why this approach fits, and the trade-offs — especially where it differs from the React or Node/TS equivalent the user already knows. Analogies to standard React (for RN) and to Node/TS API design (for Go) are usually the fastest way to land an explanation.
 - **You write the code.** The user wants to fully understand it — well enough to modify it by hand — but isn't asking to hand-type it themselves. Implement it, but make sure the explanation alongside it is enough that the code isn't a black box.
 - **Keep code idiomatic and legible over clever.** This is explicitly not a "vibe coded" project. Prefer explicit, conventional patterns for the ecosystem (idiomatic Go, idiomatic Expo/RN) over abstractions that are hard to follow, even if more concise.
+- **Specs drive the work.** What to build next is the roadmap in `specs/README.md`, and each feature's behavior is in its spec there. Start a slice from its spec, in plan mode. When behavior changes while building it, update the spec in the same PR, and update the roadmap and the spec's status when the slice lands.
 - Don't re-litigate decisions already made below — build on them. Do flag it if a new request seems to conflict with one.
 
 ## Decisions made so far
@@ -20,6 +21,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
 | Area          | Decision                                               | Notes                                                                                           |
 | ------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Mobile app    | React Native + Expo, TypeScript (`app/`)               | Primary learning goal                                                                           |
+| Specs         | Living feature specs in `specs/`, technical plans made when a slice starts | Specs (behavior, rules, acceptance criteria, UI) are written ahead and kept current. Plans aren't committed; their outcome lands in code and docs. Markdown in the repo rather than GitHub Issues, so specs are reviewed in the PRs that change them. |
 | Backend       | Go, stdlib `net/http` (`api/`), no framework           | Deliberate second learning track. Go 1.22+ ServeMux pattern routing; revisit (e.g. chi) only if it feels thin. |
 | API tooling   | golangci-lint v2, Makefile, GitHub Actions CI          | CI runs lint, `sqlc diff`, build and `go test -race` (with a Postgres service) on PRs touching `api/`. No docker build in CI.                            |
 | Repo layout   | Monorepo: `app/`, `api/`, `infra/`                     | `infra/` created once hosting and database are decided                                          |
