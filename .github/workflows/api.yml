@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # For finding main's coverage artifact to compare against.
+      actions: read
       # For the coverage comment.
       pull-requests: write
     services:
@@ -57,27 +59,17 @@ jobs:
       - run: go test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
         env:
           TEST_DATABASE_URL: postgres://lifeapp:lifeapp@localhost:5432/lifeapp?sslmode=disable
-      # Edits the bot's previous comment, so each PR keeps a single coverage
-      # comment that updates on every push.
+      # Runs on main too: the report on PRs compares against this artifact
+      # from the PR's base commit.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: code-coverage
+          path: api/coverage.out
+      # Comments on the PR with only the packages it impacts, and the change
+      # versus main.
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
-        run: |
-          total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}')
-          {
-            echo "### API coverage: $total"
-            echo
-            echo "<details><summary>Per function</summary>"
-            echo
-            echo "| File | Function | Coverage |"
-            echo "| --- | --- | ---: |"
-            # Rows look like "<module>/internal/x/y.go:12:  Func  85.7%".
-            go tool cover -func=coverage.out | awk -v prefix="$(go list -m)/" '
-              /^total:/ { next }
-              { sub(prefix, "", $1); sub(/:$/, "", $1); printf "| `%s` | `%s` | %s |\n", $1, $2, $3 }'
-            echo "</details>"
-            echo
-            echo "To inspect coverage line-by-line, run \`make cover-html\` in \`api/\` locally."
-          } > coverage.md
-          gh pr comment ${{ github.event.pull_request.number }} --body-file coverage.md --edit-last --create-if-none
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: fgrosse/go-coverage-report@v1.5.0
+        with:
+          coverage-file-name: coverage.out
+          trim: github.com/lakaniemi/life-app/api
