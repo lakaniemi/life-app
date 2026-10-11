@@ -35,6 +35,12 @@ ORDER BY f.name, f.id;
 INSERT INTO family_members (family_id, user_id, role)
 VALUES ($1, $2, $3);
 
+-- name: AddFamilyMemberIfAbsent :exec
+-- Leaves an existing membership, and its role, as it is.
+INSERT INTO family_members (family_id, user_id, role)
+VALUES ($1, $2, $3)
+ON CONFLICT (family_id, user_id) DO NOTHING;
+
 -- name: GetFamilyMember :one
 SELECT * FROM family_members
 WHERE family_id = $1 AND user_id = $2;
