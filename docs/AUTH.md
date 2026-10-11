@@ -147,7 +147,7 @@ It's a separate command that writes to the database directly, deliberately not a
 - **No "sign out everywhere"** and no session listing. `sessions.id` exists so this can be added without exposing tokens.
 - **Google key-fetch failures return 401**, the same as a bad token. They're logged as warnings.
 - **Sign in with Apple** would be needed for a public App Store release. The schema change is small: make `google_sub` nullable, add `apple_sub`, and require one of them with a `CHECK`.
-- **Account deletion** isn't implemented.
+- **Account deletion** isn't implemented. When it is, it must apply the family membership rules (sole admin, sole member; see the `internal/family` package doc) before the user's rows cascade.
 
 ## Sources
 

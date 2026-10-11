@@ -1,0 +1,65 @@
+# Specs
+
+What the app does and why, feature by feature, and what gets built next. Specs describe behavior a user can observe. How it's built lives in code and technical docs (`docs/`, `api/docs/`, package docs), and the coding rules live in the `CLAUDE.md` files.
+
+## Product
+
+A family life-management app. Users sign in with Google and belong to one or more families. Most app data (meals, shopping lists, health) belongs to a family, and users reach it through their membership. See the root [README](../README.md).
+
+## Features
+
+| Feature | Spec | Status |
+| ------- | ---- | ------ |
+| Sign-in | [sign-in.md](sign-in.md) | in progress: API built, app not |
+| Families, members and invites | [families.md](families.md) | in progress: API built, app not |
+
+Unrefined ideas go in [ideas.md](ideas.md).
+
+## Roadmap
+
+The next slices, in order. Each one is a single PR.
+
+1. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
+2. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
+3. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
+
+## Workflow
+
+1. **Capture:** an idea goes into `ideas.md` as a line or two.
+2. **Specify:** in a session without code, the idea becomes a feature spec. Open questions are listed explicitly rather than guessed.
+3. **Roadmap:** the spec's next PR-sized slices are added to the roadmap above, in order.
+4. **Plan:** a slice starts in plan mode with a technical plan, re-checking library and vendor docs then. The plan isn't committed. Its outcome lands in code, docs and the PR description.
+5. **Implement:** one slice per PR. If behavior changes while building it, the spec changes in the same PR. The slice leaves the roadmap, and the spec's status and Implementation section are updated.
+
+Open questions are resolved, or explicitly deferred, before the slice that needs them.
+
+## Spec template
+
+An `idea` spec can be a few bullets. Detail grows as it nears the front of the roadmap.
+
+```md
+# <Feature>
+
+Status: idea | specified | in progress | built
+
+## Why
+
+## Behavior
+What the user can do, as flows or bullets.
+
+## Rules
+Business rules the API enforces.
+
+## Acceptance criteria
+Testable statements. They map to endpoint tests, and later to app tests.
+
+## UI
+Screens and their states: empty, loading, error, edge cases.
+
+## Non-goals
+
+## Open questions
+
+## Implementation
+Links to the code and technical docs, filled in as slices land.
+```
