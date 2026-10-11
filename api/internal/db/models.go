@@ -22,6 +22,13 @@ type Family struct {
 	UpdatedAt time.Time
 }
 
+type FamilyInvite struct {
+	TokenHash []byte
+	FamilyID  uuid.UUID
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
 type FamilyMember struct {
 	FamilyID uuid.UUID
 	UserID   uuid.UUID

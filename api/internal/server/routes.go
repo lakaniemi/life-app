@@ -15,7 +15,7 @@ import (
 func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) {
 	queries := db.New(pool)
 	authService := auth.NewService(logger, queries, verifier)
-	familyService := family.NewService(pool)
+	familyService := family.NewService(logger, pool)
 	userService := user.NewService(queries)
 
 	requireAuth := newRequireAuth(logger, authService)
@@ -47,4 +47,12 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, veri
 		withMiddlewares(requireAuth, requireFamilyMembership)(handlePatchFamilyMember(familyService)))
 	mux.Handle("DELETE /families/{familyID}/members/{userID}",
 		withMiddlewares(requireAuth, requireFamilyMembership)(handleDeleteFamilyMember(familyService)))
+	mux.Handle("POST /families/{familyID}/invites",
+		withMiddlewares(requireAuth, requireFamilyMembership)(handleCreateInvite(familyService)))
+
+	// Invitees aren't members yet, so these aren't under /families/{familyID}.
+	mux.Handle("GET /invites/{token}",
+		withMiddlewares(requireAuth)(handlePreviewInvite(familyService)))
+	mux.Handle("POST /invites/{token}/accept",
+		withMiddlewares(requireAuth)(handleAcceptInvite(familyService)))
 }

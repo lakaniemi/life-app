@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lakaniemi/life-app/api/internal/db"
 	"github.com/lakaniemi/life-app/api/internal/family"
@@ -80,13 +81,14 @@ func checkErrorCode(t *testing.T, rec *httptest.ResponseRecorder, want string) {
 	}
 }
 
-// TestFamilyRoutesAuthorization checks every family route's access control in
-// one place. Add new family routes here.
+// TestFamilyRoutesAuthorization checks every family and invite route's access
+// control in one place. Add new family routes here.
 func TestFamilyRoutesAuthorization(t *testing.T) {
 	t.Parallel()
 	fixture := newFamilyFixture(t, family.RoleMember)
 	familyPath := fixture.familyPath()
 	memberPath := fixture.memberPath("Bob")
+	token := fixture.server.seedInvite(t, fixture.family.ID, time.Now().Add(time.Hour))
 
 	tests := []struct {
 		method string
@@ -103,6 +105,9 @@ func TestFamilyRoutesAuthorization(t *testing.T) {
 		{http.MethodDelete, familyPath, nil, true},
 		{http.MethodPatch, memberPath, map[string]any{"role": "admin"}, true},
 		{http.MethodDelete, memberPath, nil, true},
+		{http.MethodPost, familyPath + "/invites", nil, true},
+		{http.MethodGet, "/invites/" + token, nil, false},
+		{http.MethodPost, "/invites/" + token + "/accept", nil, false},
 	}
 	for _, tt := range tests {
 		route := tt.method + " " + tt.path

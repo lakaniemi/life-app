@@ -55,14 +55,12 @@ CREATE TABLE auth_nonces (
 CREATE INDEX auth_nonces_expires_at_idx ON auth_nonces (expires_at);
 
 CREATE TABLE family_invites (
-    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_hash  bytea PRIMARY KEY CHECK (octet_length(token_hash) = 32),
     family_id   uuid NOT NULL REFERENCES families ON DELETE CASCADE,
-    code        text NOT NULL UNIQUE,
-    created_by  uuid REFERENCES users ON DELETE SET NULL,
     created_at  timestamptz NOT NULL DEFAULT now(),
-    expires_at  timestamptz NOT NULL,
-    revoked_at  timestamptz
+    expires_at  timestamptz NOT NULL
 );
+CREATE INDEX family_invites_family_id_idx ON family_invites (family_id);
 ```
 
 Migrations add each table in the phase that first needs it: users/families/members in phase 1, sessions and nonces in phase 2, invites in phase 4.
@@ -89,8 +87,8 @@ Migrations add each table in the phase that first needs it: users/families/membe
 3. The **sole member can't leave**, so they must delete the family. The UI shows "leave" as "delete" in that case.
 
 **Invites**
-- Codes are stored in plain text. An admin must be able to re-display the QR, the code is short-lived, and it only grants membership.
-- Codes are multi-use until `expires_at` (default 24h) or `revoked_at`.
+- The token is random like a session token, and only its SHA-256 is stored, for the same reason. Nothing needs it again after the create response, because invites are never listed or re-displayed.
+- Tokens are multi-use until `expires_at` (24h). There's no revocation; creating an invite deletes the family's expired ones, which keeps the table bounded without a background job.
 
 ## Conventions
 

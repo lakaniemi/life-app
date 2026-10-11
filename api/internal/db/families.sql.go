@@ -28,6 +28,24 @@ func (q *Queries) AddFamilyMember(ctx context.Context, arg AddFamilyMemberParams
 	return err
 }
 
+const addFamilyMemberIfAbsent = `-- name: AddFamilyMemberIfAbsent :exec
+INSERT INTO family_members (family_id, user_id, role)
+VALUES ($1, $2, $3)
+ON CONFLICT (family_id, user_id) DO NOTHING
+`
+
+type AddFamilyMemberIfAbsentParams struct {
+	FamilyID uuid.UUID
+	UserID   uuid.UUID
+	Role     string
+}
+
+// Leaves an existing membership, and its role, as it is.
+func (q *Queries) AddFamilyMemberIfAbsent(ctx context.Context, arg AddFamilyMemberIfAbsentParams) error {
+	_, err := q.db.Exec(ctx, addFamilyMemberIfAbsent, arg.FamilyID, arg.UserID, arg.Role)
+	return err
+}
+
 const createFamily = `-- name: CreateFamily :one
 INSERT INTO families (name)
 VALUES ($1)
