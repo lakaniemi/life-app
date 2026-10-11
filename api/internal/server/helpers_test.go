@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"io"
@@ -118,6 +119,19 @@ func (s testServer) seedMember(t *testing.T, familyID uuid.UUID, user db.User, r
 	if err != nil {
 		t.Fatalf("add family member: %v", err)
 	}
+}
+
+// seedInvite creates an invite to the family and returns its token. It hashes
+// the token the way internal/family does, so a mismatch fails the invite tests.
+func (s testServer) seedInvite(t *testing.T, familyID uuid.UUID, expiresAt time.Time) string {
+	t.Helper()
+	token := rand.Text()
+	hash := sha256.Sum256([]byte(token))
+	_, err := s.queries.CreateInvite(t.Context(), db.CreateInviteParams{TokenHash: hash[:], FamilyID: familyID, ExpiresAt: expiresAt})
+	if err != nil {
+		t.Fatalf("create invite: %v", err)
+	}
+	return token
 }
 
 func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
