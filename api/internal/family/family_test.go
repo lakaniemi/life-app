@@ -2,6 +2,7 @@ package family_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ func TestAdminActionsCheckTheCurrentRole(t *testing.T) {
 	ctx := t.Context()
 	pool := dbtest.New(t)
 	queries := db.New(pool)
-	familyService := family.NewService(pool)
+	familyService := family.NewService(slog.New(slog.DiscardHandler), pool)
 
 	seedUser := func(name string) db.User {
 		created, err := queries.CreateUser(ctx, db.CreateUserParams{GoogleSub: "sub-" + name, Name: name})
@@ -70,6 +71,10 @@ func TestAdminActionsCheckTheCurrentRole(t *testing.T) {
 		}},
 		{"remove member", func() error { return familyService.RemoveMember(ctx, staleBob, carol.ID) }},
 		{"delete", func() error { return familyService.Delete(ctx, staleBob) }},
+		{"create invite", func() error {
+			_, _, err := familyService.CreateInvite(ctx, staleBob)
+			return err
+		}},
 	}
 	for _, action := range actions {
 		if err := action.run(); !errors.Is(err, family.ErrForbidden) {

@@ -46,23 +46,17 @@ func (q *Queries) DeleteExpiredFamilyInvites(ctx context.Context, familyID uuid.
 	return err
 }
 
-const getFamilyByInviteToken = `-- name: GetFamilyByInviteToken :one
-SELECT f.id, f.name, f.created_at, f.updated_at FROM families f
-JOIN family_invites i ON i.family_id = f.id
-WHERE i.token_hash = $1 AND i.expires_at > now()
+const getInviteFamilyID = `-- name: GetInviteFamilyID :one
+SELECT family_id FROM family_invites
+WHERE token_hash = $1 AND expires_at > now()
 `
 
 // Returns the family an unexpired invite belongs to.
-func (q *Queries) GetFamilyByInviteToken(ctx context.Context, tokenHash []byte) (Family, error) {
-	row := q.db.QueryRow(ctx, getFamilyByInviteToken, tokenHash)
-	var i Family
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) GetInviteFamilyID(ctx context.Context, tokenHash []byte) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getInviteFamilyID, tokenHash)
+	var family_id uuid.UUID
+	err := row.Scan(&family_id)
+	return family_id, err
 }
 
 const previewInvite = `-- name: PreviewInvite :one

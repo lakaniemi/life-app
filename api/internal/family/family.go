@@ -18,6 +18,15 @@
 //     demoted. They promote someone else first.
 //  2. The only member can't leave. They delete the family instead.
 //
+// # Invites
+//
+// Users join through an invite an admin creates: a random token, shown in the
+// app as a QR code or shared as a link. It's multi-use until it expires, and
+// there's no revoking or listing invites, so only its SHA-256 is stored.
+// Accepting takes the user's ID instead of an actor, since they aren't a
+// member yet. An unknown and an expired token both give ErrInviteNotFound, so
+// callers can't tell which tokens ever existed.
+//
 // # Concurrency
 //
 // The rules are check-then-write: count the admins, then delete a row. Postgres
@@ -64,6 +73,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -86,17 +96,21 @@ var (
 	ErrForbidden            = errors.New("only a family admin can do this")
 	ErrSoleAdmin            = errors.New("a family must keep at least one admin")
 	ErrSoleMember           = errors.New("the family's only member can't leave; delete the family instead")
+	ErrInviteNotFound       = errors.New("invite not found or expired")
 )
 
 // Service creates, reads and changes families and their membership.
 type Service struct {
+	logger  *slog.Logger
 	pool    *pgxpool.Pool
 	queries *db.Queries
 }
 
 // NewService returns a Service that stores families in pool's database.
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool, queries: db.New(pool)}
+// logger receives failures that don't fail the operation, such as cleanup
+// errors.
+func NewService(logger *slog.Logger, pool *pgxpool.Pool) *Service {
+	return &Service{logger: logger, pool: pool, queries: db.New(pool)}
 }
 
 // Create creates a family with the user as its admin.
