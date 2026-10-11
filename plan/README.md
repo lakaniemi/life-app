@@ -14,7 +14,7 @@ Users sign in with Google and belong to one or more families. Most future app da
 | 1   | [02-phase1-db-foundation.md](02-phase1-db-foundation.md) | Local Postgres, goose migrations, sqlc + pgx, first tables | [x]    |
 | 2   | [03-phase2-auth.md](03-phase2-auth.md)               | Google ID token login, sessions, `/me`                        | [x]    |
 | 3   | [04-phase3-families-api.md](04-phase3-families-api.md) | Family CRUD, membership rules, authorization pattern        | [x]    |
-| 4   | [05-phase4-invites.md](05-phase4-invites.md)         | Invite links (QR in the app)                                  | [ ]    |
+| 4   | [05-phase4-invites.md](05-phase4-invites.md)         | Invite links (QR in the app)                                  | [x]    |
 | 5   | [06-phase5-app-auth.md](06-phase5-app-auth.md)       | App: Google sign-in, token storage, API client                | [ ]    |
 | 6   | [07-phase6-app-families.md](07-phase6-app-families.md) | App: create/view family, show and scan invite QR            | [ ]    |
 

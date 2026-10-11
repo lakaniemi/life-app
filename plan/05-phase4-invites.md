@@ -17,7 +17,7 @@ Joining a family uses an invite. An admin taps "Invite a member", and the app sh
 | ----------------------------------- | -------- | ----------------------------------------------------------------------------------- |
 | `POST /families/{familyID}/invites` | admin    | 201 → `{invite: {token, expiresAt}}`                                                |
 | `GET /invites/{token}`              | any user | Preview: `{family: {id, name}, alreadyMember}`, so the user confirms before joining |
-| `POST /invites/{token}/accept`      | any user | Joins as `member` → `{family}` with the caller's role                               |
+| `POST /invites/{token}/accept`      | any user | Joins as `member` → 204. The app already knows the family from the preview, and refetches it |
 
 An unknown or expired token returns 404 for both cases, so there's no oracle for guessing tokens.
 
