@@ -118,7 +118,10 @@ Shared components in `ui/`, used the same way on every screen:
 - **A development build, not Expo Go.** Expo Go is a prebuilt shell from Expo with a fixed set of native modules, Expo's package id and Expo's signing key. Native Google sign-in needs our own native module and our package id and signing key, so the app runs as a development build: our own shell with `expo-dev-client`, still loading JS from Metro with fast refresh. It's rebuilt only when native dependencies change.
 - **Variants:** `app.config.ts` selects the package id (`…lifeapp.dev` vs `…lifeapp`), name, icon and API URL from one `APP_VARIANT` variable, so dev and prod install side by side. Google's Android OAuth client is keyed by package name plus signing-certificate SHA-1, so each variant and signing key needs its own (`docs/AUTH.md`).
 - **Local API:** the Android emulator reaches the Mac's `localhost` at `10.0.2.2`. A physical phone uses `adb reverse tcp:8080 tcp:8080` or the LAN IP.
-- **Distribution:** a release APK installed directly (sideloaded), built with EAS Build or locally. We hold the signing key, which keeps the SHA-1 for Google sign-in stable. The Google Play internal testing track is the alternative: installs and updates through the Play Store, but a paid developer account, and Play App Signing re-signs the app, which adds another SHA-1 to register.
+- **Distribution: GitHub Releases.** Each native release is a GitHub release with the signed APK attached under a fixed file name. The phones install it directly (sideloading). Because the asset name is fixed, `https://github.com/lakaniemi/life-app/releases/latest/download/<name>.apk` always points to the newest APK; the "Update required" screen links there ([Version compatibility](#10-version-compatibility)).
+  - The APK is built with EAS Build or locally, and signed with our own key, which keeps the SHA-1 for Google sign-in stable. Where the release is built, and where the key lives, is decided with the baseline slice.
+  - The repo is public, so anyone can download the APK. That's acceptable: it holds no secrets (the Web client ID and API URL are public by nature), and everything is behind sign-in.
+  - Alternative: the Google Play internal testing track, for installs and auto-updates through the Play Store (and Play's in-app update API). It needs a paid developer account, and Play App Signing re-signs the app, which adds another SHA-1 to register.
 - **Over-the-air updates with EAS Update.** JS-only changes reach installed apps without a new APK. An update is a JS bundle plus assets, published to a branch that the build's channel points to. The app checks at launch, downloads only the files it doesn't have, and runs the new bundle from the next cold start; if loading it fails, it falls back to the bundle embedded in the APK.
   - **`fingerprint` runtime version policy:** a hash of everything that affects the native layer. An update reaches only builds with the same runtime version, so JS never runs on a native shell it doesn't match; a native change means a new APK.
   - **Restart prompt:** besides the check at launch, the app checks again when it returns to the foreground (throttled), because Android keeps the process alive for days. When an update has downloaded (`useUpdates()`), a snackbar "Update ready · Restart" reloads the app (`Updates.reloadAsync()`). The app never restarts without asking, since that could interrupt an edit.
@@ -128,18 +131,58 @@ Shared components in `ui/`, used the same way on every screen:
 
 ## 10. Version compatibility
 
-The API is deployed once and changes for everyone at the same moment, while each phone runs whatever version it last loaded. Three boundaries can disagree:
+The API is deployed once and changes for everyone at the same moment, while each phone runs whatever version it last loaded. Four boundaries can disagree:
 
-- **Native shell vs JS:** covered by the `fingerprint` runtime version.
-- **App vs API:** the API changes only in backward-compatible ways, by expand then contract. The rules are in `api/CLAUDE.md` ("Compatibility"). The app's half:
-  - **Read responses tolerantly.** zod objects drop unknown keys by default, so new fields are harmless. Enums are the trap: a new value (say, a role `viewer`) would reject the whole response, so enums from the API parse unknown values to a fallback such as `'unknown'`, and the UI renders something neutral.
-  - **Send only changed fields** in updates (`PATCH`), so an old app can't wipe a field it doesn't know about.
-  - Unknown error codes get a generic message.
-- **Device cache vs app:**
-  - Timestamps stay **ISO strings** in schemas and are formatted in the UI. The persisted cache round-trips through JSON, so a parsed `Date` would come back as a string while its type still says `Date`.
-  - The persister's `buster` is the running update's id, so a new app version starts with a fresh cache rather than reading data cached under older types.
-- **Escape hatch for an unavoidable breaking change:** the app sends its version in a header on every request, and shows a blocking "Update required" screen when the API answers with the code `app_outdated`. The app side ships in the first build, because an old app can only react to that code if the handling was already in it. The API-side check is added only when a breaking change needs it.
-- **No URL versioning** (`/v1`). With one first-party client and over-the-air updates, expand-then-contract gives the same guarantee per field. Versioning would mean serving every old version in parallel, and retiring one still needs the gate above. If it's ever needed, the version header lets the API branch per endpoint.
+| Boundary | Covered by |
+| --- | --- |
+| Native shell vs JS | The `fingerprint` runtime version ([Build and release](#9-build-and-release)) |
+| App vs API | Contract rules, a tolerant reader, and a minimum compatibility level (below) |
+| Device cache vs app | ISO-string timestamps and a cache buster (below) |
+| Database vs the API version still running during a deploy | Expand-then-contract migrations (`api/CLAUDE.md`, Database) |
+
+These are the established practices, scaled to one first-party app with two users and over-the-air updates. Sources: Google's [AIP-180](https://google.aip.dev/180) for the contract rules, Fowler's [parallel change](https://martinfowler.com/bliki/ParallelChange.html) for breaking changes.
+
+### Most changes are never breaking
+
+The API follows AIP-180's rules, listed in `api/CLAUDE.md` ("Compatibility"):
+- Endpoints, response fields and enum values may be added.
+- Nothing is removed, renamed, retyped or reformatted, and no default changes.
+- **No new required request fields.** A new request field is allowed only if leaving it out means "behave as before". Inventing a default to make a field optional is not allowed. A field without that natural meaning is a breaking change, handled as described under "Breaking changes".
+
+The app's half is the **tolerant reader**:
+- zod objects drop unknown keys by default, so new response fields are harmless.
+- **Enums are the trap:** a new value (say, a role `viewer`) would reject the whole response. So enums from the API parse unknown values to a fallback such as `'unknown'`, and the UI renders something neutral.
+- Unknown error codes get a generic message.
+- Updates send only the changed fields (`PATCH`), so an old app can't wipe a field it doesn't know about.
+
+### Breaking changes
+
+When a change can't be additive, there are two options, in order of preference:
+
+1. **A new endpoint** next to the old one, when the new shape is naturally a separate operation. The old endpoint is removed once no supported app uses it (expand, migrate, contract).
+2. **Raise the minimum compatibility level** in the same API deploy that makes the breaking change. Old apps are turned away with "Update required" instead of being served with guessed defaults. With two users and over-the-air updates, that costs a minute's inconvenience, and the API stays clean.
+
+There is no URL or date-based versioning (`/v1`, Stripe-style version transforms). Those keep every old version served in parallel, which is worth it for many external clients that can't be made to upgrade, and isn't for us.
+
+### Compatibility level
+
+- **The app declares an integer API compatibility level**: one constant in `src/api/`, starting at 1. It's bumped in the app update that starts depending on a breaking API change. An integer, rather than the native version (which changes only with a new APK) or the runtime fingerprint (a hash, so it can't be ordered), because it must be orderable and must change with over-the-air updates.
+- **The app sends it on every request** in an `App-Compat-Level` header. Custom headers have no `X-` prefix (RFC 6648).
+- **The API keeps its minimum as a constant in code**, so raising it ships atomically with the breaking change it protects. A middleware answers requests below the minimum with the error code `app_outdated`. Requests without the header (curl, tests) aren't gated: only the app sends it, and every build does. The API logs the level, which shows which levels are still in use before an old endpoint is removed.
+- **The app handles `app_outdated` from its first build**, because an old app can only react to the code if the handling was already in it. It shows the blocking "Update required" screen ([app-shell.md](../../specs/app-shell.md)):
+  1. It checks for an over-the-air update (`Updates.fetchUpdateAsync()`). If one is available for this runtime version, the screen offers **Restart**, which fixes it on the spot.
+  2. Otherwise the fix needs a new APK, and the screen links to the latest GitHub release.
+
+### Device cache
+
+- Timestamps stay **ISO strings** in schemas and are formatted in the UI. The persisted cache round-trips through JSON, so a parsed `Date` would come back as a string while its type still says `Date`.
+- The persister's `buster` is the running update's id, so a new app version starts with a fresh cache rather than reading data cached under older types.
+
+### Not adopted, for now
+
+- **Feature flags or remote config**, to ship dormant code and switch it on server-side. There are no staged rollouts with two users.
+- **Automated breaking-change detection**: diffing OpenAPI specs in CI, or consumer-driven contract tests (Pact). There's no spec to diff yet; revisit together with OpenAPI.
+- **Google Play's in-app update API.** It delivers updates through Google Play, so it doesn't apply to a sideloaded APK.
 
 ## Deferred
 

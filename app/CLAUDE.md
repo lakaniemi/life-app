@@ -12,5 +12,6 @@
   - Each feature's `api.ts` declares zod schemas for responses (types are inferred from them), a query-key factory and named hooks. Screens use those hooks, never raw `useQuery` keys.
   - Mutations are optimistic, roll back on failure and show a snackbar with Retry.
   - Timestamps stay ISO strings in schemas. Enums from the API get an unknown-value fallback.
+  - The API compatibility level (a constant in `src/api/`, sent as `App-Compat-Level`) is bumped in the update that starts depending on a breaking API change.
 - **Copy:** all user-facing text goes through i18n. Errors are shown by the API's error `code`, never its `message`.
 - **Runs as a development build**, not in Expo Go, because native Google sign-in needs our own native module and package id.

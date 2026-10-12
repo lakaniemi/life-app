@@ -28,7 +28,8 @@ The next slices, in order. Each one is a single PR unless noted.
    - the API client and `ApiError`
    - the snackbar host and the offline banner
    - `expo-updates` with the restart prompt
-   - an app-version header and the "Update required" screen
+   - the API compatibility level: the app's header and "Update required" screen, and the API's minimum-level middleware
+   - release APKs published as GitHub releases
    - the shared loading, empty and error states
    - i18n setup
    - Jest and React Native Testing Library
