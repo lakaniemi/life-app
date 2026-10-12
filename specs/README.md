@@ -13,6 +13,7 @@ A family life-management app. Users sign in with Google and belong to one or mor
 | Sign-in | [sign-in.md](sign-in.md) | in progress: API built, app not |
 | Families, members and invites | [families.md](families.md) | in progress: API built, app not |
 | App shell | [app-shell.md](app-shell.md) | specified |
+| Shopping | [shopping.md](shopping.md) | specified |
 
 Unrefined ideas go in [ideas.md](ideas.md).
 
@@ -39,6 +40,9 @@ The next slices, in order. Each one is a single PR unless noted.
 2. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
 3. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
 4. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
+5. **Shopping API: catalogue**: catalogue items and the category keys ([shopping.md](shopping.md))
+6. **Shopping API: lists**: lists and items, ticking, and finishing with carry-over ([shopping.md](shopping.md))
+7. **App shopping**: the Home card, the Shopping screen, the list screen, "Add items", finishing, past lists and the catalogue editor ([shopping.md](shopping.md#ui)). The spec's UI is only a baseline, so this slice starts by refining the UX of "Add items" and of the catalogue editor. It may split into several PRs when planned.
 
 ## Workflow
 
