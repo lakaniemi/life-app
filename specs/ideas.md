@@ -3,7 +3,6 @@
 An inbox for unrefined ideas, a line or two each. An idea moves into its own spec when it's specified (see the [workflow](README.md#workflow)).
 
 - **Meal planning**
-- **Shopping lists**
 - **Health tracking**
 - **Calendar integration**: not a calendar replacement, but it may integrate with one.
 - **Family switcher**: the API already supports several families per user; the app works in one active family for now. Switching would live in the avatar menu, like Google's account switcher (see [app-shell.md](app-shell.md)).
