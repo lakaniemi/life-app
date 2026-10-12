@@ -43,7 +43,7 @@ App: written when the app slices are planned.
 
 ## UI
 
-- **Single family for now.** The app uses the user's first family. A family switcher can come later without API changes.
+- **Single family for now.** The app works in one active family (see [app-shell.md](app-shell.md)), which is the user's family. A user can't join a second family from the app yet. A family switcher can come later without API changes.
 - **First run:** a signed-in user with no family chooses "Create a family" or "Join with an invite".
 - **Family screen:** the name, and the members with their roles. Admins can rename the family, change roles and remove members.
 - **Leave and delete:** "Leave" becomes "Delete family" when you're the sole member. If you're the sole admin and others remain, the app asks you to promote someone first.
@@ -51,6 +51,7 @@ App: written when the app slices are planned.
 - **Join:** scan the QR code, or open the link from another app. Some chat apps don't make `lifeapp://` links tappable, so "Join with an invite" also accepts a pasted link. The preview shows the family's name before confirming.
 - **Join preview states:**
   - Already a member: "You're already in X", with "Open family" instead of "Join".
+  - Already in another family: "You're already in a family. Joining a second one isn't supported yet." No "Join" button.
   - Unknown or expired invite: "This invite has expired or isn't valid. Ask for a new one."
 
 ## Non-goals
@@ -59,10 +60,6 @@ App: written when the app slices are planned.
 - Typing an invite by hand. A QR code and a link cover every case.
 - Several families in the UI, for now.
 - Ownership separate from the admin role.
-
-## Open questions
-
-- **Joining a second family.** The API allows it, but the single-family UI shows only the first one. Options: warn before joining, or switch the app to the new family. Decide before the app invites slice.
 
 ## Implementation
 
