@@ -14,11 +14,11 @@ Guidance for Claude Code in this repo. Product description: README.md.
 - **You write the code.** The user wants to fully understand it — well enough to modify it by hand — but isn't asking to hand-type it themselves. Implement it, but make sure the explanation alongside it is enough that the code isn't a black box.
 - **Keep code idiomatic and legible over clever.** This is explicitly not a "vibe coded" project. Prefer explicit, conventional patterns for the ecosystem (idiomatic Go, idiomatic Expo/RN) over abstractions that are hard to follow, even if more concise.
 - **Specs drive the work.** What to build next is the roadmap in `specs/README.md`, and each feature's behavior is in its spec there (Markdown in the repo, not GitHub Issues). Start a slice from its spec, in plan mode. When behavior changes while building it, update the spec in the same PR, and update the roadmap and the spec's status when the slice lands.
-- Don't re-litigate decisions already made (below, in `api/CLAUDE.md` and in `docs/`) — build on them. Do flag it if a new request seems to conflict with one.
+- Don't re-litigate decisions already made (below, in `api/CLAUDE.md`, `app/docs/ARCHITECTURE.md` and `docs/`) — build on them. Do flag it if a new request seems to conflict with one.
 
 ## Decisions
 
-- **Stack:** `app/` is React Native + Expo (TypeScript). `api/` is Go with stdlib `net/http` and no framework; revisit (e.g. chi) only if it feels thin. The database is PostgreSQL: Postgres 18 locally in Docker, with SQL kept portable to 17. API-specific decisions are in `api/CLAUDE.md`.
+- **Stack:** `app/` is React Native + Expo (TypeScript). `api/` is Go with stdlib `net/http` and no framework; revisit (e.g. chi) only if it feels thin. The database is PostgreSQL: Postgres 18 locally in Docker, with SQL kept portable to 17. API-specific decisions are in `api/CLAUDE.md`, and the app's architecture is in `app/docs/ARCHITECTURE.md`.
 - **Auth:** native Google sign-in; the API verifies the ID token and issues its own opaque session. See `docs/AUTH.md`.
 - **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon, and lets development proceed before production is chosen.
 

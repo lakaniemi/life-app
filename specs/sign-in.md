@@ -30,21 +30,20 @@ Every family's data is private to its members, so the app needs to know who the 
 ## UI
 
 - **Sign-in screen:** the app's name and "Sign in with Google". While signing in, the button shows progress and can't be pressed again.
-- **Sign out:** reachable from a profile or settings screen. Where that lives is decided with the app families slice.
+- **Sign out:** in the avatar menu (see [app-shell.md](app-shell.md)).
 
 ## Non-goals
 
 - Other sign-in providers. Sign in with Apple is in [ideas.md](ideas.md).
 - Signing out everywhere, or listing sessions.
 - Account deletion.
+- Sign-in on iOS, for now. The app is Android-first ([`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md)), and `docs/AUTH.md` covers Android (Credential Manager).
 
 ## Open questions
 
 Resolve these when planning the slice:
 
-- **Platforms:** Android only first, or iOS too? `docs/AUTH.md` covers Android (Credential Manager) in detail.
 - **Nonce library on Android.** The API requires a nonce. `@react-native-google-signin` supports one on Android only in its paid version. The alternatives are another Credential Manager library, or a small Expo module of our own. See `docs/AUTH.md`, "App side".
-- **API types in the app:** hand-written TypeScript types for a small `fetch` client, or an OpenAPI spec with generated types.
 - **Editing the name:** `PATCH /me` exists. Where the app offers it is open.
 
 ## Implementation
