@@ -22,6 +22,11 @@
   3. For a request body, declare normalization in go-playground/mold `mod` struct tags (e.g. `mod:"trim"` on user-entered text) and rules in go-playground/validator `validate` tags on the request struct. Then return the error from `decodeAndValidateRequest(w, r, &req)`, which decodes, normalizes and validates in that order. Validation failures respond 400 `invalid_body` with a `fields` list (`{"field","rule"}`, using the JSON field names).
   4. For a route under `/families/{familyID}`, register it with `withMiddlewares(requireAuth, requireFamilyMembership)(handler)` and pass the caller's membership (`familyMembershipFrom`) to the domain service as the actor. The service acts only on the actor's family and checks the role itself, under the family lock (see the `internal/family` package doc). Every query on family-owned data filters by that family ID.
   5. Add endpoint tests next to it. Add a family-scoped route to `TestFamilyRoutesAuthorization` too.
+- **Compatibility:** installed apps lag behind the API, so changes stay backward compatible (expand, then contract).
+  - New response fields, endpoints and enum values are additive. New request fields are optional with a default.
+  - Updates are `PATCH` with partial bodies, so an old app can't wipe fields it doesn't know.
+  - Nothing is renamed, removed or changed in meaning while an app version in use still relies on it. Add the replacement, ship the app, then remove.
+  - No URL versioning. The app sends its version in a header, and can be turned away with the code `app_outdated` if a breaking change is ever unavoidable (see `app/docs/ARCHITECTURE.md`, "Version compatibility").
 - **Tests:** follow `docs/TESTING_STRATEGY.md`, including its per-endpoint checklist. Endpoint tests against a real database are the default; tests that need one call `dbtest.New(t)`. Don't test generated code.
 - **Config:** `cmd/*` calls `config.Load()` once and passes the resulting `config.Config` down. Nothing else reads env vars, except `internal/dbtest` (`TEST_DATABASE_URL`), because tests have no `main`. `ENVIRONMENT` only selects an entry in the `defaults` map in `config.go` and isn't exposed, so no code branches on dev vs prod. Add a new setting as a `Config` field, with defaults in that map where they make sense.
 - **Database:**
