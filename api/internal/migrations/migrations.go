@@ -20,7 +20,7 @@ var fsys embed.FS
 
 // NewProvider returns a goose provider that applies the embedded migrations
 // to db. It holds a Postgres advisory lock while migrating, so two processes
-// (e.g. an API starting while cmd/migrate runs) never migrate at once.
+// (e.g. a deploy and a manual run) never migrate at once.
 func NewProvider(db *sql.DB) (*goose.Provider, error) {
 	locker, err := lock.NewPostgresSessionLocker()
 	if err != nil {

@@ -15,8 +15,8 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migr
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/api /api
-# The API migrates at startup. /migrate is for inspecting or rolling back by
-# hand, by overriding the entrypoint: /migrate status.
+# Run migrations from the same image by overriding the entrypoint:
+# /migrate up (see compose.yaml).
 COPY --from=build /out/migrate /migrate
 EXPOSE 8080
 USER nonroot:nonroot

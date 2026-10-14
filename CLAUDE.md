@@ -25,7 +25,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
   - The API is reached at `life-app-api.<domain>`, never by IP.
   - Postgres 18 runs on the same server, reachable only on its internal Docker network, so the API connects without TLS.
   - Deploys roll continuously from `main`: CI publishes `ghcr.io/lakaniemi/life-api:<sha>` and moves `:production` to it, and the server polls that tag and deploys it. CI has no access to the server.
-  - The API applies migrations at startup (`api/CLAUDE.md`, Database). `GET /health` reports the running commit as `version`.
+  - Migrations run as a one-off container (`/migrate up` from the API image) that must succeed before the new API starts, so a failed migration leaves the old API serving (`api/CLAUDE.md`, Database). `GET /health` reports the running commit as `version`.
 
 ## Open decisions
 

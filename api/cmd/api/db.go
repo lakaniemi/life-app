@@ -2,15 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
-
-	"github.com/lakaniemi/life-app/api/internal/migrations"
 )
 
 const pingTimeout = 5 * time.Second
@@ -30,29 +25,4 @@ func newPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 	return pool, nil
-}
-
-// migrate applies pending migrations before the server starts, so a new
-// image's code never runs against an older schema.
-func migrate(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) (err error) {
-	// goose needs a database/sql handle. This one borrows connections from the
-	// pool, and closing it leaves the pool open.
-	db := stdlib.OpenDBFromPool(pool)
-	defer func() {
-		err = errors.Join(err, db.Close())
-	}()
-
-	provider, err := migrations.NewProvider(db)
-	if err != nil {
-		return fmt.Errorf("create migration provider: %w", err)
-	}
-	results, err := provider.Up(ctx)
-	// On failure, results still lists the migrations applied before it.
-	for _, result := range results {
-		logger.Info("migration applied", "migration", result.Source.Path, "duration", result.Duration.String())
-	}
-	if err != nil {
-		return fmt.Errorf("migrate up: %w", err)
-	}
-	return nil
 }

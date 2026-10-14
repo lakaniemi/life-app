@@ -64,10 +64,6 @@ func run(ctx context.Context, stdout io.Writer) error {
 	defer pool.Close()
 	logger.Info("database connected")
 
-	if err := migrate(ctx, logger, pool); err != nil {
-		return err
-	}
-
 	verifier, err := google.New(ctx, cfg.GoogleClientIDs)
 	if err != nil {
 		return err
