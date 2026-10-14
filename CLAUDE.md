@@ -20,15 +20,16 @@ Guidance for Claude Code in this repo. Product description: README.md.
 
 - **Stack:** `app/` is React Native + Expo (TypeScript). `api/` is Go with stdlib `net/http` and no framework; revisit (e.g. chi) only if it feels thin. The database is PostgreSQL: Postgres 18 locally in Docker, with SQL kept portable to 17. API-specific decisions are in `api/CLAUDE.md`, and the app's architecture is in `app/docs/ARCHITECTURE.md`.
 - **Auth:** native Google sign-in; the API verifies the ID token and issues its own opaque session. See `docs/AUTH.md`.
-- **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon, and lets development proceed before production is chosen.
+- **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon. The image is the contract with hosting: `/api` as the entrypoint and `/migrate` beside it, configured only through env vars, built for `linux/amd64`.
+- **Hosting:** a shared server configured in a separate repo, `lakaniemi/infra`; its design and open decisions live there. What this repo must keep working for it:
+  - **Merging to `main` deploys.** CI publishes `ghcr.io/lakaniemi/life-api:<sha>` and moves `:production`, which the server deploys.
+  - **Migrations run as a one-off `/migrate up` before the new API replaces the old one**, so the old API still serves during them (`api/CLAUDE.md`, Database).
+  - **`GET /health`** stays public and cheap. Its `version` (the build's commit) is how a deploy is confirmed.
+  - Postgres runs on the same host, reachable only on an internal network, so the API connects without TLS.
 
 ## Open decisions
 
-Don't present these as decided.
-
-- **Hosting:** candidate Google Cloud Run, `europe-north1` (Hamina, Finland). Its always-free tier for this region, checked in the console: 2M requests, 180k vCPU-s and 360k GiB-s per month. `infra/` is created once hosting is decided.
-- **Production database:** likely a managed Postgres free tier; verify current limits and regions first. It must be reachable from the API host with `sslmode=verify-full`. Backups are decided together with it.
-- **When migrations run in deployment:** a one-off job before each deploy, or at startup with an advisory lock. Decide when `infra/` exists.
+Don't present these as decided. None at the moment.
 
 Update these lists as decisions get made, so future sessions don't need to re-derive context from conversation history.
 

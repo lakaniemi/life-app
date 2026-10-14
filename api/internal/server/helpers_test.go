@@ -36,6 +36,8 @@ func (f fakeVerifier) Verify(_ context.Context, rawIDToken string) (google.Ident
 	return identity, nil
 }
 
+const testVersion = "test-version"
+
 type testServer struct {
 	handler      http.Handler
 	queries      *db.Queries
@@ -50,7 +52,7 @@ func newTestServer(t *testing.T) testServer {
 	pool := dbtest.New(t)
 	googleTokens := fakeVerifier{}
 	return testServer{
-		handler:      New(slog.New(slog.DiscardHandler), pool, googleTokens),
+		handler:      New(slog.New(slog.DiscardHandler), pool, googleTokens, testVersion),
 		queries:      db.New(pool),
 		pool:         pool,
 		googleTokens: googleTokens,

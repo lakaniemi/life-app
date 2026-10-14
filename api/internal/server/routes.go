@@ -12,7 +12,7 @@ import (
 	"github.com/lakaniemi/life-app/api/internal/user"
 )
 
-func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) {
+func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier, version string) {
 	queries := db.New(pool)
 	authService := auth.NewService(logger, queries, verifier)
 	familyService := family.NewService(logger, pool)
@@ -21,7 +21,7 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, veri
 	requireAuth := newRequireAuth(logger, authService)
 	requireFamilyMembership := newRequireFamilyMembership(logger, familyService)
 
-	mux.Handle("GET /health", handleHealth(logger, pool))
+	mux.Handle("GET /health", handleHealth(logger, pool, version))
 
 	mux.Handle("POST /auth/nonce", handleCreateNonce(authService))
 	mux.Handle("POST /auth/google", handleGoogleLogin(logger, authService))
