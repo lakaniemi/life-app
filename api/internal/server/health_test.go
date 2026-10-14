@@ -16,12 +16,12 @@ func TestHealth(t *testing.T) {
 		{
 			name:       "database up",
 			databaseUp: true,
-			wantBody:   `{"status":"ok","database":"ok"}` + "\n",
+			wantBody:   `{"status":"ok","database":"ok","version":"test-version"}` + "\n",
 		},
 		{
 			name:       "database down still responds ok",
 			databaseUp: false,
-			wantBody:   `{"status":"degraded","database":"unavailable"}` + "\n",
+			wantBody:   `{"status":"degraded","database":"unavailable","version":"test-version"}` + "\n",
 		},
 	}
 

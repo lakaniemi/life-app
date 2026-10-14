@@ -13,8 +13,9 @@ import (
 )
 
 // New returns the API's root handler with all routes and middleware applied.
-func New(logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier) http.Handler {
+// version identifies the running build and is reported by GET /health.
+func New(logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier, version string) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger, pool, verifier)
+	addRoutes(mux, logger, pool, verifier, version)
 	return withMiddlewares(newLogRequests(logger), newAttachLogger(logger))(mux)
 }

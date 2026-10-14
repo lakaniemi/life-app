@@ -27,6 +27,10 @@ import (
 // and SIGKILL.
 const shutdownTimeout = 8 * time.Second
 
+// version is the build's git commit, set at build time with
+// -ldflags "-X main.version=<sha>" (see the Dockerfile).
+var version = "dev"
+
 func main() {
 	ctx := context.Background()
 	if err := run(ctx, os.Stdout); err != nil {
@@ -70,7 +74,7 @@ func run(ctx context.Context, stdout io.Writer) error {
 	}
 
 	srv := &http.Server{
-		Handler:           server.New(logger, pool, verifier),
+		Handler:           server.New(logger, pool, verifier, version),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
@@ -85,7 +89,7 @@ func run(ctx context.Context, stdout io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
-	logger.Info("server listening", "addr", ln.Addr().String())
+	logger.Info("server listening", "addr", ln.Addr().String(), "version", version)
 
 	serveErr := make(chan error, 1)
 	go func() {

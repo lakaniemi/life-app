@@ -7,8 +7,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+# The git commit, reported by GET /health. CI passes it; local builds get "dev".
+ARG VERSION=dev
 # Static binary (no libc), required by distroless/static.
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/api ./cmd/api
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
 FROM gcr.io/distroless/static-debian13:nonroot
