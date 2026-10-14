@@ -21,8 +21,7 @@ Run from `api/`:
 ```sh
 cp .env.example .env   # then fill in GOOGLE_CLIENT_IDS
 make db-up        # start Postgres 18 in Docker
-make migrate-up   # create the tables
-make dev          # run with hot reload
+make dev          # run with hot reload; the API creates the tables at startup
 curl -i localhost:8080/health
 ```
 
@@ -39,7 +38,7 @@ make fmt            # format
 make generate       # regenerate Go code from SQL queries (sqlc)
 make build          # build binary to bin/api
 make docker-build   # build container image
-make docker-run     # run the image like prod: Postgres, migrations, then the API on port 8080
+make docker-run     # run the image like prod: Postgres, then the API on port 8080
 
 make db-up          # start local Postgres
 make db-down        # stop it; data is kept in a Docker volume
@@ -91,7 +90,7 @@ The automated tests fake Google. To test with a real Google ID token before the 
 4. Put the client ID in `api/.env` as `GOOGLE_CLIENT_IDS`.
 5. Keep the client secret in your shell only. The API never uses it; it's only needed for step 3 below.
 
-With `make db-up migrate-up run` going, in another terminal:
+With `make db-up run` going, in another terminal:
 
 ```sh
 CLIENT_ID='<client ID>'; CLIENT_SECRET='<client secret>'; REDIRECT='http://localhost:9999'
@@ -117,5 +116,5 @@ curl -s localhost:8080/me -H "Authorization: Bearer $TOKEN"                   # 
 
 ## Database
 
-- **Migrations** are SQL files in `internal/migrations/` (goose format, `-- +goose Up` / `-- +goose Down`). They're embedded in the binaries. `cmd/migrate` runs them locally and in deployment: the image includes `/migrate` next to `/api`.
+- **Migrations** are SQL files in `internal/migrations/` (goose format, `-- +goose Up` / `-- +goose Down`). They're embedded in the binaries. The API applies pending migrations at startup, before it serves requests, under a Postgres advisory lock. `cmd/migrate` (`make migrate-*`) inspects, rolls back and creates them; the image includes it as `/migrate` next to `/api`.
 - **Queries** are written as SQL in `internal/db/queries/`. sqlc turns them into typed Go functions in `internal/db/`. After changing a query or the schema, run `make generate` and commit the result. CI fails if the generated code is stale.

@@ -5,8 +5,10 @@ package migrations
 import (
 	"database/sql"
 	"embed"
+	"fmt"
 
 	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/lock"
 )
 
 // Dir is the migrations directory relative to the module root, used when
@@ -17,7 +19,12 @@ const Dir = "internal/migrations"
 var fsys embed.FS
 
 // NewProvider returns a goose provider that applies the embedded migrations
-// to db.
+// to db. It holds a Postgres advisory lock while migrating, so two processes
+// (e.g. an API starting while cmd/migrate runs) never migrate at once.
 func NewProvider(db *sql.DB) (*goose.Provider, error) {
-	return goose.NewProvider(goose.DialectPostgres, db, fsys)
+	locker, err := lock.NewPostgresSessionLocker()
+	if err != nil {
+		return nil, fmt.Errorf("create migration lock: %w", err)
+	}
+	return goose.NewProvider(goose.DialectPostgres, db, fsys, goose.WithSessionLocker(locker))
 }
