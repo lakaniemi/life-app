@@ -8,4 +8,4 @@ Users sign in with Google and belong to one or more families. Most app data belo
 
 - **`app/`** — React Native + Expo, TypeScript. Primary learning goal.
 - **`api/`** — Go. Second learning track (not Node/TS, which is already familiar). See [`api/README.md`](api/README.md).
-- **`infra/`** — TBD. Cheap/free hosting, sized for personal-scale traffic.
+- **Hosting** — a Hetzner server shared with other hobby projects, configured in a separate repo, `lakaniemi/infra`. CI publishes the API image to ghcr.io, and the server deploys it.
