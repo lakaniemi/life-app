@@ -20,12 +20,12 @@ Guidance for Claude Code in this repo. Product description: README.md.
 
 - **Stack:** `app/` is React Native + Expo (TypeScript). `api/` is Go with stdlib `net/http` and no framework; revisit (e.g. chi) only if it feels thin. The database is PostgreSQL: Postgres 18 locally in Docker, with SQL kept portable to 17. API-specific decisions are in `api/CLAUDE.md`, and the app's architecture is in `app/docs/ARCHITECTURE.md`.
 - **Auth:** native Google sign-in; the API verifies the ID token and issues its own opaque session. See `docs/AUTH.md`.
-- **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon.
-- **Hosting:** a Hetzner Cloud server in Helsinki, shared with other hobby projects and configured in its own repo, `lakaniemi/infra` (Ansible, Docker Compose, Caddy). Its design and open decisions (e.g. where backups go) live there, not here.
-  - The API is reached at `life-app-api.<domain>`, never by IP.
-  - Postgres 18 runs on the same server, reachable only on its internal Docker network, so the API connects without TLS.
-  - Deploys roll continuously from `main`: CI publishes `ghcr.io/lakaniemi/life-api:<sha>` and moves `:production` to it, and the server polls that tag and deploys it. CI has no access to the server.
-  - Migrations run as a one-off container (`/migrate up` from the API image) that must succeed before the new API starts, so a failed migration leaves the old API serving (`api/CLAUDE.md`, Database). `GET /health` reports the running commit as `version`.
+- **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon. The image is the contract with hosting: `/api` as the entrypoint and `/migrate` beside it, configured only through env vars, built for `linux/amd64`.
+- **Hosting:** a shared server configured in a separate repo, `lakaniemi/infra`; its design and open decisions live there. What this repo must keep working for it:
+  - **Merging to `main` deploys.** CI publishes `ghcr.io/lakaniemi/life-api:<sha>` and moves `:production`, which the server deploys.
+  - **Migrations run as a one-off `/migrate up` before the new API replaces the old one**, so the old API still serves during them (`api/CLAUDE.md`, Database).
+  - **`GET /health`** stays public and cheap. Its `version` (the build's commit) is how a deploy is confirmed.
+  - Postgres runs on the same host, reachable only on an internal network, so the API connects without TLS.
 
 ## Open decisions
 
