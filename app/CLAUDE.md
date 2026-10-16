@@ -1,6 +1,8 @@
 # CLAUDE.md (app/)
 
-- **Expo SDK 57.** Its API surface changes fast between versions; check the versioned docs (https://docs.expo.dev/versions/v57.0.0/) rather than relying on training-data knowledge before writing Expo/RN code.
+- **Expo SDK 58.** Its API surface changes fast between versions; check the versioned docs (https://docs.expo.dev/versions/v58.0.0/) rather than relying on training-data knowledge before writing Expo/RN code.
+- **Dependencies:** add Expo and React Native packages with `npx expo install`, which picks the SDK's version. Otherwise use the newest version, and pin an older one only for compatibility, with the reason in the commit. Packages deliberately off the SDK's versions are listed in `expo.install.exclude` in `package.json`.
+- **`android/` and `ios/` are generated** by `expo prebuild` from `app.config.ts` and config plugins (Continuous Native Generation), and are gitignored. Never edit them by hand: a native change goes through `app.config.ts` or a config plugin. `APP_VARIANT` (`development`, the default, or `production`) selects the variant.
 - **Architecture:** `docs/ARCHITECTURE.md` holds the agreed design and the reasons for it. Build on it. When a slice changes a decision, update that doc in the same PR.
 - **Layout:** feature-first.
   - `src/app` holds routes only (Expo Router, file-based routing). Route files stay thin: they render a screen from `src/features/<feature>/` and set route options.
@@ -15,3 +17,4 @@
   - The API compatibility level (a constant in `src/api/`, sent as `App-Compat-Level`) is bumped in the update that starts depending on a breaking API change.
 - **Copy:** all user-facing text goes through i18n. Errors are shown by the API's error `code`, never its `message`.
 - **Runs as a development build**, not in Expo Go, because native Google sign-in needs our own native module and package id.
+- **Tests** are Jest (`jest-expo` preset) and React Native Testing Library, next to the code they test (`home-screen.test.tsx`), never under `src/app/`, where Expo Router would treat them as routes.
