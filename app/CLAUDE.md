@@ -1,7 +1,7 @@
 # CLAUDE.md (app/)
 
 - **Expo SDK 58.** Its API surface changes fast between versions; check the versioned docs (https://docs.expo.dev/versions/v58.0.0/) rather than relying on training-data knowledge before writing Expo/RN code.
-- **Dependencies:** add Expo and React Native packages with `npx expo install`, which picks the SDK's version. Otherwise use the newest version, and pin an older one only for compatibility, with the reason in the commit. Packages deliberately off the SDK's versions are listed in `expo.install.exclude` in `package.json`.
+- **Dependencies:** add Expo and React Native packages with `npx expo install` (`--dev` for devDependencies; `-- --save-dev` doesn't work), which picks the SDK's version. Otherwise use the newest version, and pin an older one only for compatibility, with the reason in the commit. Packages deliberately off the SDK's versions are listed in `expo.install.exclude` in `package.json`.
 - **`android/` and `ios/` are generated** by `expo prebuild` from `app.config.ts` and config plugins (Continuous Native Generation), and are gitignored. Never edit them by hand: a native change goes through `app.config.ts` or a config plugin. `APP_VARIANT` (`development`, the default, or `production`) selects the variant.
 - **Architecture:** `docs/ARCHITECTURE.md` holds the agreed design and the reasons for it. Build on it. When a slice changes a decision, update that doc in the same PR.
 - **Layout:** feature-first.

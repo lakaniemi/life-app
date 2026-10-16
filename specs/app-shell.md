@@ -15,7 +15,7 @@ Features share one frame: how the app is navigated, where personal settings live
 - **The app needs a connection.** Without one, it still shows the last data it loaded, read-only, under an "Offline · showing saved data" banner.
 - **Changes show immediately.** Edits appear as soon as they're made and are saved in the background. If saving fails after automatic retries, the change is undone and a snackbar says what failed, with **Retry**.
 - **Data stays fresh** by reloading when a screen opens or the app returns from the background. Lists can also be pulled down to refresh.
-- **App updates** download in the background. When one is ready, a snackbar "Update ready · Restart" offers to restart into it. The app never restarts on its own.
+- **App updates** download in the background. When one is ready, a snackbar "Update ready · Restart" offers to restart into it. The app never restarts on its own. This comes with the Over-the-air updates slice; until then, a new version means installing a new APK.
 - **Update required.** If the app is too old for the API, a blocking screen asks the user to update. If an over-the-air update is available, the screen offers **Restart** to apply it. Otherwise the update needs a new app install, and the screen links to the latest APK on GitHub.
 
 ## Rules
@@ -30,7 +30,7 @@ Features share one frame: how the app is navigated, where personal settings live
 - With no connection, previously loaded screens still show their data, and the offline banner is visible. It disappears when the connection returns.
 - A failing change is reverted and shows a snackbar with Retry, and Retry repeats the change.
 - Opening a screen, returning to the app, or pulling down a list shows fresh data.
-- After an update has downloaded, the restart snackbar appears; tapping Restart starts the new version.
+- After an update has downloaded, the restart snackbar appears; tapping Restart starts the new version (Over-the-air updates slice).
 - When the API turns the app away as too old, nothing but the "Update required" screen is reachable. Its Restart (over-the-air) or download link (new APK) leads to a version the API accepts.
 
 ## UI
@@ -58,4 +58,4 @@ Every screen uses the same states:
 ## Implementation
 
 - Technical design: [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md).
-- App: not started. Most of this is built in the App baseline slice.
+- App: not started. Most of this is built in the App baseline slice, and app updates in the Over-the-air updates slice.
