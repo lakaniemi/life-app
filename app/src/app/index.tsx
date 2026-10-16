@@ -1,17 +1,12 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Stack } from "expo-router";
 
-export default function Index() {
+import { HomeScreen } from "@/features/home/home-screen";
+
+export default function HomeRoute() {
   return (
-    <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit this screen.</Text>
-    </View>
+    <>
+      <Stack.Screen options={{ title: "Home" }} />
+      <HomeScreen />
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
