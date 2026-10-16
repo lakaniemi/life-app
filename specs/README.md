@@ -21,22 +21,13 @@ Unrefined ideas go in [ideas.md](ideas.md).
 
 The next slices, in order. Each one is a single PR unless noted.
 
-1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). It covers:
-   - a development build and the dev and prod variants
-   - the folder structure, replacing the template's leftovers
-   - the Paper theme
-   - the query client, with its persisted cache and the focus and online wiring
-   - the API client and `ApiError`
-   - the snackbar host and the offline banner
-   - `expo-updates` with the restart prompt
-   - the API compatibility level: the app's header and "Update required" screen, and the API's minimum-level middleware
-   - release APKs published as GitHub releases
-   - the shared loading, empty and error states
-   - i18n setup
-   - Jest and React Native Testing Library
-   - app CI
-
-   It may split into several PRs when planned.
+1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). Six PRs, in order:
+   1. ~~Dev build and tooling~~ (done, #20): SDK 58, the development build and the dev and prod variants, the folder structure replacing the template's leftovers, Jest and React Native Testing Library, and app CI
+   2. **UI foundation**: the Paper theme, i18n, the shared loading, empty and error states, and the snackbar host
+   3. **Data layer**: the API client and `ApiError`, the query client with its persisted cache and the focus and online wiring, and the offline banner
+   4. **Over-the-air updates**: `expo-updates` against a self-hosted update server, with the restart prompt
+   5. **API compatibility level**: the app's header and "Update required" screen, and the API's minimum-level middleware
+   6. **Release APKs**: signed on GitHub Actions and published as GitHub releases. Last, so that no installed app lacks the "Update required" handling.
 2. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
 3. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
 4. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
