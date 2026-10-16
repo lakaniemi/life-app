@@ -1,16 +1,18 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { Text } from "react-native-paper";
+
+import { Screen } from "@/ui/screen";
 
 export function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text>Life App</Text>
-    </View>
+    <Screen style={styles.container}>
+      <Text variant="headlineMedium">Life App</Text>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -1,0 +1,19 @@
+import { ThemeProvider } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import type { ReactNode } from "react";
+import { PaperProvider } from "react-native-paper";
+
+import { useAppTheme } from "@/ui/theme";
+
+export function AppProviders({ children }: { children: ReactNode }) {
+  const theme = useAppTheme();
+
+  return (
+    <PaperProvider theme={theme.paper}>
+      <ThemeProvider value={theme.navigation}>
+        {children}
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </PaperProvider>
+  );
+}
