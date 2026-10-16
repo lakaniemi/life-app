@@ -1,5 +1,6 @@
-// Hermes doesn't implement Intl.PluralRules, which i18next needs for plural
-// keys (`_one`, `_other`). This installs a polyfill only when it's missing.
+// i18next needs Intl.PluralRules for plural keys (`_one`, `_other`), which
+// Hermes doesn't fully provide. This installs a polyfill only where it's
+// missing or incomplete.
 import "intl-pluralrules";
 
 import { getLocales, type Locale } from "expo-localization";

@@ -6,7 +6,7 @@
 - **Architecture:** `docs/ARCHITECTURE.md` holds the agreed design and the reasons for it. Build on it. When a slice changes a decision, update that doc in the same PR.
 - **Layout:** feature-first.
   - `src/app` holds routes only (Expo Router, file-based routing). Route files stay thin: they render a screen from `src/features/<feature>/` and set route options.
-  - `src/api` holds the fetch client and the TanStack Query setup. `src/ui` holds the theme and shared components.
+  - `src/api` holds the fetch client and the TanStack Query setup. `src/ui` holds the theme and shared components. `src/i18n` holds the i18next setup and the copy (`en.json`).
   - Features depend on `api` and `ui`, not on each other's internals. The two exceptions are in the architecture doc.
   - Imports use the `@/*` path alias (e.g. `@/ui/screen`), not relative paths. No barrel `index.ts` files.
 - **UI:** Material 3 through React Native Paper, using the theme's color tokens, never hard-coded colors. Layout uses `StyleSheet` and flexbox. Every screen handles its loading, empty and error states explicitly, with the shared components in `src/ui`.

@@ -8,10 +8,12 @@ Most of it is set up by the **App baseline** slice in the [roadmap](../../specs/
 
 - **Material 3, one design for both platforms.** The app is Android-first; both current users are on Android. M3 is Android's native look, and on iOS a Material app is acceptable for now. One design means no per-platform components.
 - **Native navigation chrome.** Expo Router's native stack (and native tabs, once there are tabs) renders the platform's real header, transitions and back gesture. Rebuilding these in JS is where apps start to feel off.
-- **React Native Paper** for components and theming. It implements M3 in JS, so it looks the same on both platforms, and its theme is a set of M3 color tokens. Check that it is still actively maintained (GitHub releases) before adopting it.
+- **React Native Paper** for components and theming. It implements M3 in JS, so it looks the same on both platforms, and its theme is a set of M3 color tokens. Adopted at 5.15 in October 2026, when it had regular releases. 6.0 was in alpha then: an M3 overhaul that removes deprecated APIs, so moving to it is a planned upgrade of its own.
+  - **Icons** are Material Design Icons from `@react-native-vector-icons/material-design-icons`, which Paper looks for first. Expo's icon guide marks `@expo/vector-icons` as headed for deprecation.
+  - **The navigation theme is mapped from Paper's** in `ui/theme.ts`, because the native header is themed through Expo Router's `ThemeProvider`, not Paper's. Paper's `adaptNavigationTheme` isn't used: its types expect string colors, while React Navigation 7's are `ColorValue`.
   - Alternative: `@expo/ui`, whose universal components render Jetpack Compose on Android and SwiftUI on iOS. They are truly native, but the set is small (19 components), each tree needs a `<Host>`, and there's no documented theming API. Use it only where a native widget clearly beats Paper's, such as a date picker.
 - **Layout** is plain `StyleSheet` and flexbox. Paper covers widgets, not layout.
-- **Colors:** an M3 scheme generated from a muted steel-blue seed (around `#4A6A8F`), previewed in Material Theme Builder, with light and dark variants. No Android dynamic color: the app keeps its own scheme. There's no brand yet, so the seed is the identity for now.
+- **Colors:** an M3 "tonal spot" scheme generated from a muted steel-blue seed (`#4A6A8F`) with `@material/material-color-utilities`, the library behind Material Theme Builder, with light and dark variants. The generated tokens are committed as static values in `ui/theme.ts`, and the system setting picks light or dark. No Android dynamic color: the app keeps its own scheme. There's no brand yet, so the seed is the identity for now.
 - **Accessibility:** M3's default contrast, and the system font scale is respected. Icon-only buttons have an `accessibilityLabel`, touch targets are at least 48dp, and status is never conveyed by color alone (a checked item gets a checkmark, not just grey text).
 
 ## 2. App shell and navigation
@@ -75,11 +77,12 @@ src/
     shopping/       # api.ts, screens, dashboard-card.tsx
   api/              # fetch wrapper, ApiError, QueryClient setup and persistence
   ui/               # Paper theme, shared components (Screen, EmptyState, ErrorState, snackbar host)
+  i18n/             # i18next setup and the copy (en.json)
 ```
 
 - **Route files only wire navigation:** they render a screen from `features/` plus route options such as the header title.
 - **Each feature's `api.ts`** owns its zod schemas, a query-key factory (`shoppingKeys.list(familyId, listId)`) and named hooks (`useShoppingList`, `useCheckItem`). Screens use those hooks and never call `useQuery` with raw keys. Family-scoped keys start with the family id, so switching family can never show another family's cached data.
-- **Dependencies point one way:** `features → api, ui`. Features don't import each other's internals, with two explicit exceptions: Home imports each feature's dashboard card, and family-scoped features read the active family from `families`.
+- **Dependencies point one way:** `features → api, ui`, and all three may use `i18n`, which imports none of them. Features don't import each other's internals, with two explicit exceptions: Home imports each feature's dashboard card, and family-scoped features read the active family from `families`.
 - **No barrel `index.ts` files.** Import concrete files via `@/…`. Barrels hide circular imports, and Metro doesn't tree-shake.
 - The template's `themed-*` components, `use-theme`, `constants/theme.ts` and `external-link` are replaced by the Paper theme and `ui/`.
 
@@ -111,7 +114,10 @@ Shared components in `ui/`, used the same way on every screen:
 - **Screen tests:** React Native Testing Library, rendering a screen with a real QueryClient and a mocked `src/api` client. They cover loading, empty and error states, and optimistic updates with rollback. Queries go by role and text, as with RTL on the web.
 - Both are written within each slice, like the API's endpoint tests.
 - **End-to-end tests are an option, not a decision.** If adopted, Maestro (YAML flows on a real emulator) is the candidate, being simpler than Detox. Google sign-in can't be automated, so it would need a way to start with a dev session (`make dev-session` in `api/`), which is a security design question of its own.
-- **Language:** English only, but i18n-ready from day one: all copy goes through an i18n layer (e.g. i18next with `expo-localization`), so a second language is translation work, not a refactor.
+- **Language:** English only, but i18n-ready from day one: all copy goes through i18next (`react-i18next`), so a second language is translation work, not a refactor.
+  - The copy is bundled (`i18n/en.json`), so i18next initializes synchronously and the first render has its text. `t()` keys are typed against the English copy, so a mistyped key fails typecheck.
+  - The language is the first of the device's preferred languages that has copy (`expo-localization`), falling back to English. The native module is in from the start, so a second language won't need a new APK.
+  - i18next's plural keys (`_one`, `_other`) need `Intl.PluralRules`, which Hermes doesn't document supporting. `intl-pluralrules` installs itself only where it's missing or incomplete, which it was on an SDK 58 dev build.
 
 ## 9. Build and release
 
