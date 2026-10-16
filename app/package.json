@@ -35,9 +35,9 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
-    "android:prod": "APP_VARIANT=production expo run:android --variant release",
-    "ios": "expo run:ios",
+    "android": "EXPO_NO_GIT_STATUS=1 expo prebuild --platform android --clean && expo run:android",
+    "android:prod": "export APP_VARIANT=production EXPO_NO_GIT_STATUS=1 && expo prebuild --platform android --clean && expo run:android --variant release",
+    "ios": "EXPO_NO_GIT_STATUS=1 expo prebuild --platform ios --clean && expo run:ios",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"
