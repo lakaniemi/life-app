@@ -1,11 +1,14 @@
 import { Stack } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 import { HomeScreen } from "@/features/home/home-screen";
 
 export default function HomeRoute() {
+  const { t } = useTranslation();
+
   return (
     <>
-      <Stack.Screen options={{ title: "Home" }} />
+      <Stack.Screen options={{ title: t("home.title") }} />
       <HomeScreen />
     </>
   );

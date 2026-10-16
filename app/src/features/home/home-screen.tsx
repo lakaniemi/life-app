@@ -1,12 +1,15 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 
 import { Screen } from "@/ui/screen";
 
 export function HomeScreen() {
+  const { t } = useTranslation();
+
   return (
     <Screen style={styles.container}>
-      <Text variant="headlineMedium">Life App</Text>
+      <Text variant="headlineMedium">{t("home.title")}</Text>
     </Screen>
   );
 }

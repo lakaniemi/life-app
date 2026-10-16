@@ -1,3 +1,6 @@
+// Initializes i18next once, as the root layout does in the app.
+import "@/i18n/i18n";
+
 // Tests render without the native safe-area provider that Expo Router sets up
 // in the app, so the library's own mock supplies fixed insets.
 jest.mock(

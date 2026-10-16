@@ -1,0 +1,12 @@
+{
+  "common": {
+    "loading": "Loading",
+    "retry": "Retry"
+  },
+  "errors": {
+    "generic": "Something went wrong."
+  },
+  "home": {
+    "title": "Life App"
+  }
+}
