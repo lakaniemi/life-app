@@ -22,7 +22,7 @@ Guidance for Claude Code in this repo. Product description: README.md.
 - **Auth:** native Google sign-in; the API verifies the ID token and issues its own opaque session. See `docs/AUTH.md`.
 - **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon. The image is the contract with hosting: `/api` as the entrypoint and `/migrate` beside it, configured only through env vars, built for `linux/amd64`.
 - **Hosting:** a shared server configured in a separate repo, `lakaniemi/infra`; its design and open decisions live there. What this repo must keep working for it:
-  - **Merging to `main` deploys.** CI publishes `ghcr.io/lakaniemi/life-api:<sha>` and moves `:production`, which the server deploys.
+  - **Merging to `main` deploys.** CI publishes `ghcr.io/lakaniemi/life-app-api:<sha>` and moves `:production`, which the server deploys.
   - **Migrations run as a one-off `/migrate up` before the new API replaces the old one**, so the old API still serves during them (`api/CLAUDE.md`, Database).
   - **`GET /health`** stays public and cheap. Its `version` (the build's commit) is how a deploy is confirmed.
   - Postgres runs on the same host, reachable only on an internal network, so the API connects without TLS.

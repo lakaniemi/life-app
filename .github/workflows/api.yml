@@ -101,8 +101,8 @@ jobs:
           push: true
           build-args: VERSION=${{ github.sha }}
           tags: |
-            ghcr.io/lakaniemi/life-api:${{ github.sha }}
-            ghcr.io/lakaniemi/life-api:production
+            ghcr.io/lakaniemi/life-app-api:${{ github.sha }}
+            ghcr.io/lakaniemi/life-app-api:production
           # Links the package to this repo, so it inherits the repo's access.
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha
