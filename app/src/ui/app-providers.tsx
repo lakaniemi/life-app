@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { PaperProvider } from "react-native-paper";
 
+import { SnackbarProvider } from "@/ui/snackbar";
 import { useAppTheme } from "@/ui/theme";
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -11,7 +12,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <PaperProvider theme={theme.paper}>
       <ThemeProvider value={theme.navigation}>
-        {children}
+        <SnackbarProvider>{children}</SnackbarProvider>
         <StatusBar style="auto" />
       </ThemeProvider>
     </PaperProvider>
