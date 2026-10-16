@@ -33,6 +33,7 @@ Don't present these as decided.
 
 - **Over-the-air update server.** The app uses the stock `expo-updates` client against a self-hosted server implementing the Expo Updates protocol, not EAS Update. Which server (xprem, formerly expo-open-ota, or our own in Go) is decided when the OTA PR of the App baseline is planned.
 - **The HTTP status for `app_outdated`.** Decided when the API compatibility level is built.
+- **Dependency maintenance.** How new versions (Expo SDK patches, npm and Go packages) get noticed and bumped. App CI checks versions only against the installed SDK, so nothing flags new patches yet.
 
 Update these lists as decisions get made, so future sessions don't need to re-derive context from conversation history.
 

@@ -29,10 +29,14 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      # Fails when a package is out of line with the Expo SDK's versions.
+      # Fails when a package is out of line with the installed Expo SDK's
+      # versions. Offline, it checks against expo/bundledNativeModules.json
+      # from the lockfile; online, it would compare with Expo's newest patch
+      # releases, so any PR could fail the day Expo ships one.
       - run: npx expo install --check
         env:
           CI: 1
+          EXPO_OFFLINE: 1
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test -- --ci
