@@ -29,7 +29,10 @@ Guidance for Claude Code in this repo. Product description: README.md.
 
 ## Open decisions
 
-Don't present these as decided. None at the moment.
+Don't present these as decided.
+
+- **Over-the-air update server.** The app uses the stock `expo-updates` client against a self-hosted server implementing the Expo Updates protocol, not EAS Update. Which server (xprem, formerly expo-open-ota, or our own in Go) is decided when the OTA PR of the App baseline is planned.
+- **The HTTP status for `app_outdated`.** Decided when the API compatibility level is built.
 
 Update these lists as decisions get made, so future sessions don't need to re-derive context from conversation history.
 
@@ -38,11 +41,15 @@ Update these lists as decisions get made, so future sessions don't need to re-de
 ### `app/` (run from `app/`)
 
 ```
-npm run start   # expo start
-npm run ios
-npm run android
-npm run lint    # expo lint
+npm start             # Metro, for the installed dev build
+npm run android       # regenerate android/, build and install the dev variant, start Metro
+npm run android:prod  # the same for the production variant, as a release build
+npm run lint
+npm run typecheck
+npm test
 ```
+
+Run `npm run lint`, `npm run typecheck` and `npm test` before committing.
 
 ### `api/`
 
