@@ -21,19 +21,19 @@ Unrefined ideas go in [ideas.md](ideas.md).
 
 The next slices, in order. Each one is a single PR unless noted.
 
-1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). Six PRs, in order:
+1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). Five PRs, in order:
    1. ~~Dev build and tooling~~ (done, #20): SDK 58, the development build and the dev and prod variants, the folder structure replacing the template's leftovers, Jest and React Native Testing Library, and app CI
    2. **UI foundation**: the Paper theme, i18n, the shared loading, empty and error states, and the snackbar host
    3. **Data layer**: the API client and `ApiError`, the query client with its persisted cache and the focus and online wiring, and the offline banner
-   4. **Over-the-air updates**: `expo-updates` against a self-hosted update server, with the restart prompt
-   5. **API compatibility level**: the app's header and "Update required" screen, and the API's minimum-level middleware
-   6. **Release APKs**: signed on GitHub Actions and published as GitHub releases. Last, so that no installed app lacks the "Update required" handling.
+   4. **API compatibility level**: the app's header and "Update required" screen, and the API's minimum-level middleware
+   5. **Release APKs**: signed on GitHub Actions and published as GitHub releases. Last, so that no installed app lacks the "Update required" handling.
 2. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
 3. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
 4. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
 5. **Shopping API: catalogue**: catalogue items and the category keys ([shopping.md](shopping.md))
 6. **Shopping API: lists**: lists and items, ticking, and finishing with carry-over ([shopping.md](shopping.md))
 7. **App shopping**: the Home card, the Shopping screen, the list screen, "Add items", finishing, past lists and the catalogue editor ([shopping.md](shopping.md#ui)). The spec's UI is only a baseline, so this slice starts by refining the UX of "Add items" and of the catalogue editor. It may split into several PRs when planned.
+8. **Over-the-air updates**: `expo-updates` against a self-hosted update server, and the "Update ready · Restart" snackbar ([app-shell.md](app-shell.md)). Split out of the App baseline because it needs an update server to choose and host. Until it lands, every app change reaches the phones as a new APK.
 
 ## Workflow
 
