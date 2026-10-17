@@ -11,5 +11,8 @@
   },
   "home": {
     "title": "Life App"
+  },
+  "offline": {
+    "banner": "Offline · showing saved data"
   }
 }
