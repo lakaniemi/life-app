@@ -3,19 +3,25 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@react-native-vector-icons/material-design-icons": "^13.1.5",
     "expo": "~58.0.13",
     "expo-constants": "~58.0.12",
     "expo-dev-client": "~58.0.13",
     "expo-font": "~58.0.8",
     "expo-linking": "~58.0.13",
+    "expo-localization": "~58.0.4",
     "expo-router": "~58.0.22",
     "expo-splash-screen": "~58.0.10",
     "expo-status-bar": "~58.0.3",
     "expo-system-ui": "~58.0.6",
+    "i18next": "^26.4.7",
+    "intl-pluralrules": "^2.0.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-i18next": "^17.0.20",
     "react-native": "0.88.0",
     "react-native-gesture-handler": "~3.3.0",
+    "react-native-paper": "^5.15.3",
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
@@ -43,7 +49,10 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ]
   },
   "expo": {
     "install": {

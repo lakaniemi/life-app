@@ -18,7 +18,7 @@ const variants = {
 
 type Variant = keyof typeof variants;
 
-function selectedVariant(): Variant {
+const selectedVariant = (): Variant => {
   const value = process.env.APP_VARIANT ?? "development";
   if (!(value in variants)) {
     throw new Error(
@@ -26,7 +26,7 @@ function selectedVariant(): Variant {
     );
   }
   return value as Variant;
-}
+};
 
 const variant = variants[selectedVariant()];
 
@@ -53,6 +53,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "expo-localization",
     [
       "expo-splash-screen",
       {

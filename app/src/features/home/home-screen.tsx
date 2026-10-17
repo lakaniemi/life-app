@@ -1,16 +1,21 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { StyleSheet } from "react-native";
+import { Text } from "react-native-paper";
 
-export function HomeScreen() {
+import { Screen } from "@/ui/screen";
+
+export const HomeScreen = () => {
+  const { t } = useTranslation();
+
   return (
-    <View style={styles.container}>
-      <Text>Life App</Text>
-    </View>
+    <Screen style={styles.container}>
+      <Text variant="headlineMedium">{t("home.title")}</Text>
+    </Screen>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
