@@ -3,8 +3,7 @@ import { z } from "zod";
 import { apiFetch } from "@/api/client";
 import { ApiError, NetworkError } from "@/api/errors";
 
-jest.mock("@/api/config", () => ({ apiUrl: "https://api.test" }));
-
+// jest.setup.ts mocks the API URL as https://api.test.
 const fetchMock = jest.spyOn(globalThis, "fetch");
 
 const jsonResponse = (status: number, body: unknown) =>
