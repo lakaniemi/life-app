@@ -7,3 +7,7 @@ jest.mock(
   "react-native-safe-area-context",
   () => require("react-native-safe-area-context/jest/mock").default,
 );
+
+// The real URL comes from app.config.ts through expo-constants, which tests
+// don't load. No test reaches the network: they mock fetch or the client.
+jest.mock("@/api/config", () => ({ apiUrl: "https://api.test" }));
