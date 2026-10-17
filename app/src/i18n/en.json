@@ -6,7 +6,8 @@
   "errors": {
     "generic": "Something went wrong.",
     "internal": "Something went wrong on the server.",
-    "network": "Couldn't connect."
+    "network": "Couldn't connect.",
+    "refreshFailed": "Couldn't refresh"
   },
   "home": {
     "title": "Life App"
