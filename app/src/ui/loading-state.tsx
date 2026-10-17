@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 
 // Only for a first load with nothing to show. Background refetches stay silent.
-export function LoadingState() {
+export const LoadingState = () => {
   const { t } = useTranslation();
 
   return (
@@ -14,7 +14,7 @@ export function LoadingState() {
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

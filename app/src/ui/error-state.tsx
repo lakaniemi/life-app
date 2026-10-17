@@ -9,7 +9,7 @@ type ErrorStateProps = {
 };
 
 // For a failed load with nothing cached to show instead.
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export const ErrorState = ({ message, onRetry }: ErrorStateProps) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
@@ -24,7 +24,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       </Button>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

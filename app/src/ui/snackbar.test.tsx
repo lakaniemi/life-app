@@ -3,7 +3,7 @@ import { Button } from "react-native";
 
 import { SnackbarProvider, useSnackbar } from "@/ui/snackbar";
 
-function ShowButton({ onRetry }: { onRetry: () => void }) {
+const ShowButton = ({ onRetry }: { onRetry: () => void }) => {
   const { show } = useSnackbar();
   return (
     <Button
@@ -16,16 +16,16 @@ function ShowButton({ onRetry }: { onRetry: () => void }) {
       }}
     />
   );
-}
+};
 
-async function renderAndShow(onRetry = jest.fn()) {
+const renderAndShow = async (onRetry = jest.fn()) => {
   await render(
     <SnackbarProvider>
       <ShowButton onRetry={onRetry} />
     </SnackbarProvider>,
   );
   await fireEvent.press(screen.getByRole("button", { name: "Show" }));
-}
+};
 
 beforeEach(() => {
   jest.useFakeTimers();

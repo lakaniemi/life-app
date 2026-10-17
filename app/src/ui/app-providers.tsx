@@ -6,7 +6,7 @@ import { PaperProvider } from "react-native-paper";
 import { SnackbarProvider } from "@/ui/snackbar";
 import { useAppTheme } from "@/ui/theme";
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export const AppProviders = ({ children }: { children: ReactNode }) => {
   const theme = useAppTheme();
 
   return (
@@ -17,4 +17,4 @@ export function AppProviders({ children }: { children: ReactNode }) {
       </ThemeProvider>
     </PaperProvider>
   );
-}
+};

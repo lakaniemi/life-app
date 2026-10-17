@@ -18,16 +18,16 @@ type Language = keyof typeof resources;
 const fallbackLanguage: Language = "en";
 
 // The first of the device's preferred languages that the app has copy for.
-export function pickLanguage(
+export const pickLanguage = (
   locales: Pick<Locale, "languageCode">[],
-): Language {
+): Language => {
   for (const { languageCode } of locales) {
     if (languageCode !== null && Object.hasOwn(resources, languageCode)) {
       return languageCode as Language;
     }
   }
   return fallbackLanguage;
-}
+};
 
 export const i18n = createInstance();
 

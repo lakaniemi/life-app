@@ -4,7 +4,7 @@ import { Text } from "react-native-paper";
 
 import { Screen } from "@/ui/screen";
 
-export function HomeScreen() {
+export const HomeScreen = () => {
   const { t } = useTranslation();
 
   return (
@@ -12,7 +12,7 @@ export function HomeScreen() {
       <Text variant="headlineMedium">{t("home.title")}</Text>
     </Screen>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

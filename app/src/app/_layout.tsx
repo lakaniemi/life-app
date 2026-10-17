@@ -4,10 +4,12 @@ import { Stack } from "expo-router";
 
 import { AppProviders } from "@/ui/app-providers";
 
-export default function RootLayout() {
+const RootLayout = () => {
   return (
     <AppProviders>
       <Stack />
     </AppProviders>
   );
-}
+};
+
+export default RootLayout;

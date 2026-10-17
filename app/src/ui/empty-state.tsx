@@ -9,12 +9,12 @@ type EmptyStateProps = {
   action?: { label: string; onPress: () => void };
 };
 
-export function EmptyState({
+export const EmptyState = ({
   icon,
   title,
   description,
   action,
-}: EmptyStateProps) {
+}: EmptyStateProps) => {
   const { colors } = useTheme();
 
   return (
@@ -36,7 +36,7 @@ export function EmptyState({
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

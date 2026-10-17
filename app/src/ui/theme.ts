@@ -100,7 +100,7 @@ export const darkTheme: MD3Theme = { ...MD3DarkTheme, colors: darkColors };
 // themed through Expo Router's ThemeProvider rather than Paper's, so they get
 // the same tokens mapped onto React Navigation's theme shape. Its fonts stay
 // the platform's, which is what Paper uses too.
-function navigationTheme(base: Theme, { colors }: MD3Theme): Theme {
+const navigationTheme = (base: Theme, { colors }: MD3Theme): Theme => {
   return {
     ...base,
     colors: {
@@ -112,16 +112,16 @@ function navigationTheme(base: Theme, { colors }: MD3Theme): Theme {
       notification: colors.error,
     },
   };
-}
+};
 
 const lightNavigationTheme = navigationTheme(DefaultTheme, lightTheme);
 const darkNavigationTheme = navigationTheme(DarkTheme, darkTheme);
 
 export type AppTheme = { paper: MD3Theme; navigation: Theme };
 
-export function useAppTheme(): AppTheme {
+export const useAppTheme = (): AppTheme => {
   const scheme = useColorScheme();
   return scheme === "dark"
     ? { paper: darkTheme, navigation: darkNavigationTheme }
     : { paper: lightTheme, navigation: lightNavigationTheme };
-}
+};

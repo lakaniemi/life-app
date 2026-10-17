@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { HomeScreen } from "@/features/home/home-screen";
 
-export default function HomeRoute() {
+const HomeRoute = () => {
   const { t } = useTranslation();
 
   return (
@@ -12,4 +12,6 @@ export default function HomeRoute() {
       <HomeScreen />
     </>
   );
-}
+};
+
+export default HomeRoute;

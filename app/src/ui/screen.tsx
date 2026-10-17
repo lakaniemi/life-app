@@ -11,7 +11,7 @@ type ScreenProps = {
 // The root view of every screen. The native header already sits below the
 // status bar, so only the bottom inset (the gesture or button bar, which the
 // app draws behind edge to edge) needs padding here.
-export function Screen({ children, style }: ScreenProps) {
+export const Screen = ({ children, style }: ScreenProps) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -26,7 +26,7 @@ export function Screen({ children, style }: ScreenProps) {
       {children}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

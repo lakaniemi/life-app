@@ -24,18 +24,18 @@ const SnackbarContext = createContext<SnackbarContextValue | null>(null);
 // One snackbar host for the whole app. Paper's Snackbar is only a component,
 // so the queue lives here: messages show one at a time, in the order they
 // were shown, and each waits until the one before it is dismissed.
-export function SnackbarProvider({ children }: { children: ReactNode }) {
+export const SnackbarProvider = ({ children }: { children: ReactNode }) => {
   const [queue, setQueue] = useState<Message[]>([]);
   const nextId = useRef(0);
 
-  function show(text: string, options?: SnackbarOptions) {
+  const show = (text: string, options?: SnackbarOptions) => {
     const id = nextId.current++;
     setQueue((messages) => [...messages, { ...options, id, text }]);
-  }
+  };
 
-  function dismiss(id: number) {
+  const dismiss = (id: number) => {
     setQueue((messages) => messages.filter((message) => message.id !== id));
-  }
+  };
 
   const current = queue[0];
 
@@ -57,12 +57,12 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
       )}
     </SnackbarContext.Provider>
   );
-}
+};
 
-export function useSnackbar(): SnackbarContextValue {
+export const useSnackbar = (): SnackbarContextValue => {
   const context = useContext(SnackbarContext);
   if (context === null) {
     throw new Error("useSnackbar must be used inside a SnackbarProvider");
   }
   return context;
-}
+};
