@@ -4,9 +4,21 @@
     "retry": "Retry"
   },
   "errors": {
-    "generic": "Something went wrong."
+    "generic": "Something went wrong.",
+    "internal": "Something went wrong on the server.",
+    "network": "Couldn't connect.",
+    "refreshFailed": "Couldn't refresh"
   },
   "home": {
-    "title": "Life App"
+    "title": "Life App",
+    "apiStatus": {
+      "ok": "The API is up.",
+      "degraded": "The API is up, but its database isn't.",
+      "unknown": "The API answered with an unknown status."
+    },
+    "apiVersion": "API version {{version}}"
+  },
+  "offline": {
+    "banner": "Offline · showing saved data"
   }
 }

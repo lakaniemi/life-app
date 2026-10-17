@@ -22,14 +22,18 @@ Rebuild with `npm run android` only when native code changes: a native dependenc
 
 A physical phone works too, over USB with debugging on. The dev build loads JavaScript from Metro at the Mac's LAN address, so the phone needs the same network, or `adb reverse tcp:8081 tcp:8081`.
 
+### Local API
+
+The dev variant calls the API at `http://10.0.2.2:8080`, the emulator's address for the Mac's `localhost`, so run the API locally (`api/README.md`). A physical phone can't use that address. Either run `adb reverse tcp:8080 tcp:8080` and start Metro with `API_URL=http://localhost:8080 npm start`, or set `API_URL` to the Mac's LAN address. The URL comes from Metro's config, so changing it only needs a Metro restart, not a rebuild.
+
 ## Variants
 
 `APP_VARIANT` selects the variant in `app.config.ts`. Both install side by side:
 
-| Variant | `APP_VARIANT` | Package | Name | Scheme |
-| --- | --- | --- | --- | --- |
-| Dev | `development` (default) | `com.lakaniemi.lifeapp.dev` | Life App Dev | `lifeapp-dev://` |
-| Prod | `production` | `com.lakaniemi.lifeapp` | Life App | `lifeapp://` |
+| Variant | `APP_VARIANT` | Package | Name | Scheme | API |
+| --- | --- | --- | --- | --- | --- |
+| Dev | `development` (default) | `com.lakaniemi.lifeapp.dev` | Life App Dev | `lifeapp-dev://` | `http://10.0.2.2:8080` |
+| Prod | `production` | `com.lakaniemi.lifeapp` | Life App | `lifeapp://` | `https://life-app-api.lakaniemi.com` |
 
 `npm run android:prod` builds the production variant as a release build, with the JavaScript bundled into the APK. Until release signing is set up it's signed with the debug key, so it's for local testing only.
 
