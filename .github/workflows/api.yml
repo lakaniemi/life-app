@@ -5,11 +5,13 @@ on:
     paths:
       - 'api/**'
       - '.github/workflows/api.yml'
+      - '.github/scripts/deploy-api.sh'
   push:
     branches: [main]
     paths:
       - 'api/**'
       - '.github/workflows/api.yml'
+      - '.github/scripts/deploy-api.sh'
 
 permissions:
   contents: read
@@ -74,8 +76,10 @@ jobs:
           coverage-file-name: coverage.out
           trim: github.com/lakaniemi/life-app/api
 
-  # Publishes the image that production runs. The server polls :production
-  # and deploys it, so this job needs no access to the server.
+  # Publishes the image that production runs and moves :production to it,
+  # then asks the server to deploy through its deploy hook and waits for
+  # /health to report this commit. The hook only asks the server to check
+  # :production, so CI can't choose what the server runs.
   publish:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -107,3 +111,8 @@ jobs:
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Deploy
+        working-directory: .
+        run: .github/scripts/deploy-api.sh "$GITHUB_SHA"
+        env:
+          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
