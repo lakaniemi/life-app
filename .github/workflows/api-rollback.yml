@@ -1,0 +1,60 @@
+name: api-rollback
+
+# Points :production back at an image that's already published and deploys
+# it, without rebuilding. Safe because migrations stay compatible with the
+# previous API version (api/CLAUDE.md, Database); they never run backwards.
+# The next merge to main moves :production forward again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA of the image to roll back to
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # Shared with api.yml's publish, so a rollback can't interleave with a
+    # deploy.
+    concurrency:
+      group: api-publish
+    env:
+      # Through env rather than inline in run:, so the input can't inject
+      # shell.
+      SHA: ${{ inputs.sha }}
+      IMAGE: ghcr.io/lakaniemi/life-app-api
+    steps:
+      # /health reports the full SHA, so a short one could never match.
+      - name: Check the SHA
+        run: |
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Expected a full 40-character lowercase commit SHA, got '$SHA'."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check the image exists
+        run: |
+          if ! docker buildx imagetools inspect "$IMAGE:$SHA" > /dev/null; then
+            echo "::error::No image $IMAGE:$SHA. Only commits that ran api.yml's publish have one."
+            exit 1
+          fi
+      - name: Point :production at it
+        run: docker buildx imagetools create --tag "$IMAGE:production" "$IMAGE:$SHA"
+      - name: Deploy
+        run: .github/scripts/deploy-api.sh "$SHA"
+        env:
+          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}

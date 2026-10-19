@@ -115,6 +115,12 @@ curl -s -X POST localhost:8080/auth/logout -H "Authorization: Bearer $TOKEN"  # 
 curl -s localhost:8080/me -H "Authorization: Bearer $TOKEN"                   # 401
 ```
 
+## Deployment
+
+Merging to `main` deploys. CI's `publish` job pushes `ghcr.io/lakaniemi/life-app-api:<sha>`, moves `:production` to it and calls the server's deploy hook. The server then pulls `:production`, runs `/migrate up`, and replaces the API only if the migration succeeded. The job passes once `/health` reports the new commit as `version`, and fails after 5 minutes. A failed deploy isn't retried automatically: check the server's logs, then re-run the job.
+
+To roll back, run the `api-rollback` workflow (Actions → api-rollback → Run workflow) with the full SHA of an earlier commit that `publish` ran for. It points `:production` at that image without rebuilding and deploys it the same way. Migrations don't run backwards. The old API works on the newer schema because migrations stay backward compatible (`CLAUDE.md`, Database). The next merge to `main` deploys forward again.
+
 ## Database
 
 - **Migrations** are SQL files in `internal/migrations/` (goose format, `-- +goose Up` / `-- +goose Down`). They're embedded in the binaries. `cmd/migrate` runs them locally and in deployment: the image includes `/migrate` next to `/api`.

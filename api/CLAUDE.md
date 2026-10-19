@@ -42,5 +42,5 @@
     - A fixed set of values is `text` with a CHECK constraint, not a Postgres ENUM, whose values can't easily be removed or renamed.
     - No owner columns. Control over a family is expressed only through `family_members.role`, so there's one source of truth.
     - Every family-owned table has `family_id uuid NOT NULL REFERENCES families ON DELETE CASCADE`, and every query on it filters by `family_id`.
-  - **Migrations are backward compatible with the previous API version**, which may still be running while the new one deploys. Breaking schema changes go in steps: add the new column or table, deploy code that uses it, and drop the old one in a later migration.
+  - **Migrations are backward compatible with the previous API version**, which may still be running while the new one deploys, or be rolled back to. Breaking schema changes go in steps: add the new column or table, deploy code that uses it, and drop the old one in a later migration.
 - **Don't use URL paths ending in `z`** (e.g. `/healthz`). Some hosting platforms (e.g. Cloud Run) reserve them.
