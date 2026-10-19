@@ -13,7 +13,7 @@ set -euo pipefail
 hook_url="https://webhooks.lakaniemi.com/deploy"
 health_url="https://life-app-api.lakaniemi.com/health"
 timeout_seconds=300
-poll_interval_seconds=5
+poll_interval_seconds=15
 
 expected="${1:?usage: deploy-api.sh <expected-sha>}"
 : "${DEPLOY_WEBHOOK_TOKEN:?DEPLOY_WEBHOOK_TOKEN is not set}"
