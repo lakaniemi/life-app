@@ -30,9 +30,10 @@ Most of it is set up by the **App baseline** slice in the [roadmap](../../specs/
 - **TanStack Query for server state.** Almost all data is server data owned by a family or the user. TanStack Query provides the caching, refetching, optimistic updates with rollback, mutation retries and cache persistence the app needs.
   - Alternatives: SWR (no built-in mutation retry or persistence), RTK Query (brings Redux, for very little client state), and plain `fetch` hooks (we'd rebuild all of the above).
 - **Client state is small** and lives in React context: the session (token in `expo-secure-store`) and the active family. No Redux or Zustand.
-- **The app requires a connection.** The query cache is persisted to the device, so the app starts instantly with the last-known data and shows it read-only when offline. It's cleared on sign-out. Offline writes are not supported.
-- **Every mutation is optimistic:** the cache updates at once and the request runs in the background. Mutations retry once or twice with backoff (TanStack Query doesn't retry mutations by default). On final failure the change rolls back and a snackbar offers **Retry**.
-- **Freshness:** refetch when a screen gains focus (`useFocusEffect`) and when the app returns to the foreground (`AppState`, wired into TanStack Query's `focusManager`), with a short `staleTime` so moving between screens doesn't refetch every time. Lists support pull-to-refresh (`RefreshControl`). No polling, and no real-time push.
+- **The app requires a connection.** The query cache is persisted to the device (AsyncStorage, kept for 7 days, with `gcTime` as long so restored queries survive), so the app starts instantly with the last-known data and shows it read-only when offline. It's cleared on sign-out. Offline writes are not supported.
+- **Retries:** queries and mutations retry twice with backoff, but only failures that can change on a second try: a failed connection, or a 5xx. A 4xx or a schema mismatch fails at once, and so does a timeout, since each retry would wait the full timeout again. TanStack Query doesn't retry mutations by default, so this is set for them too.
+- **Every mutation is optimistic:** the cache updates at once and the request runs in the background. On final failure the change rolls back and a snackbar offers **Retry**.
+- **Freshness:** a 30-second `staleTime`, so moving between screens doesn't refetch every time. Stale queries refetch when the app returns to the foreground (`AppState`, wired into TanStack Query's `focusManager`) and when a screen regains focus. React Navigation keeps the screens below the top of the stack mounted, so feature hooks use `useApiQuery` (`src/api/`, enforced by lint) instead of `useQuery`: it passes `useIsFocused()` as TanStack Query's `subscribed` option, so a screen out of focus stops counting as active and regaining focus refetches its stale queries. Lists support pull-to-refresh (`RefreshControl`). No polling, and no real-time push.
 - **Rules for new write endpoints**, so that retries and optimistic updates are safe:
   - **Client-generated UUIDs** for things the app creates, so an item can be edited (or its creation undone) before the server has answered.
   - **Idempotent writes:** "set `checked` to true", never "toggle". A replayed request gives the same result.
@@ -42,7 +43,7 @@ Most of it is set up by the **App baseline** slice in the [roadmap](../../specs/
 
 - **`src/api/`** holds a typed `fetch` wrapper and the TanStack Query setup. Each feature declares its response shapes as **hand-written zod schemas**, and the TS types are inferred from them. Responses are parsed at the boundary, so a mismatch with the API fails loudly in one place instead of as `undefined` deep in a screen.
   - Alternatives: plain TS interfaces (drift stays invisible), and an OpenAPI spec with generated types (a third artifact and toolchain to keep in sync; worth revisiting if the API grows much larger or gets a second client).
-- **Errors.** The API's envelope is `{"error": {"code", "message", "fields"?}}`. The client turns it into one `ApiError` (status, `code`, `fields`). A request that gets no response at all is a separate network error ("Couldn't connect").
+- **Errors.** The API's envelope is `{"error": {"code", "message", "fields"?}}`. The client turns it into one `ApiError` (status, `code`, `fields`); an error status without the envelope (e.g. a proxy's error page) gets the code `unknown`. A request that doesn't reach the API is a separate `NetworkError` ("Couldn't connect"): no response, a timeout after 15 seconds (React Native's `fetch` has no timeout), or a success that isn't JSON, such as a captive portal's login page.
 - **The app owns user-facing copy**, keyed off `code` through i18n. The API's `message` is for developers and is never shown. Unknown codes get a generic message.
 - **Any 401 on an authenticated request means signed out.** Sessions are opaque and slide over 90 days, with no refresh tokens (`docs/AUTH.md`), so there's nothing to refresh. The client handles it once, centrally: see [Session lifecycle](#5-session-lifecycle).
 
@@ -82,7 +83,7 @@ src/
 
 - **Route files only wire navigation:** they render a screen from `features/` plus route options such as the header title.
 - **Each feature's `api.ts`** owns its zod schemas, a query-key factory (`shoppingKeys.list(familyId, listId)`) and named hooks (`useShoppingList`, `useCheckItem`). Screens use those hooks and never call `useQuery` with raw keys. Family-scoped keys start with the family id, so switching family can never show another family's cached data.
-- **Dependencies point one way:** `features → api, ui`, and all three may use `i18n`, which imports none of them. Features don't import each other's internals, with two explicit exceptions: Home imports each feature's dashboard card, and family-scoped features read the active family from `families`.
+- **Dependencies point one way:** `features → api, ui`, and all three may use `i18n`, which imports none of them. `api` and `ui` don't import each other, except `ui/app-providers.tsx`, the composition root, which mounts the query provider; `api` takes callbacks instead (e.g. its refresh-error hook, which the root wires to the snackbar). Features don't import each other's internals, with two explicit exceptions: Home imports each feature's dashboard card, and family-scoped features read the active family from `families`.
 - **No barrel `index.ts` files.** Import concrete files via `@/…`. Barrels hide circular imports, and Metro doesn't tree-shake.
 - The template's `themed-*` components, `use-theme`, `constants/theme.ts` and `external-link` are replaced by the Paper theme and `ui/`.
 
@@ -97,7 +98,8 @@ Shared components in `ui/`, used the same way on every screen:
   | Situation | Behavior |
   | --- | --- |
   | A query fails, nothing cached | `ErrorState` with Retry |
-  | A query fails, cached data shown | Keep the data, snackbar "Couldn't refresh" |
+  | Offline, nothing cached | `ErrorState` saying so, without Retry (`isWaitingForConnection`): TanStack Query pauses the first fetch and runs it when back online |
+  | A query fails, cached data shown | Keep the data, snackbar "Couldn't refresh" (centrally, from the query cache; at most one per 10 seconds) |
   | A mutation fails after retries | Roll back, snackbar with Retry |
   | `400 invalid_body` from a form | Inline errors per field, from `fields` |
   | 401, or removed from the family | Handled centrally ([Session lifecycle](#5-session-lifecycle)) |
@@ -106,7 +108,7 @@ Shared components in `ui/`, used the same way on every screen:
 - **One global snackbar host with a queue:** a small provider plus `useSnackbar()`, because Paper's `Snackbar` is only a component.
 - **Each screen handles its states explicitly** with these components (`if (isPending) … if (isError) …`). No generic `QueryBoundary` wrapper; a few more lines, but visible and easy to vary.
 - **Destructive actions:** heavy or irreversible ones (delete a family, leave) always get a confirmation dialog. Whether a lighter action offers an Undo snackbar is decided per action, in its spec's UI section. With client-generated ids, undoing a delete re-creates the item with the same id.
-- **Offline banner:** "Offline · showing saved data", driven by `expo-network`, which also feeds TanStack Query's `onlineManager`. `expo-network` is Expo's own module, versioned with the SDK; `@react-native-community/netinfo` was the alternative, but it is barely maintained and isn't a New Architecture module.
+- **Offline banner:** "Offline · showing saved data", at the top of every `Screen`. `expo-network` feeds TanStack Query's `onlineManager`, and the banner reads `onlineManager`, so it shows exactly while queries are paused. Online means `isConnected`, not `isInternetReachable`: on Android the latter needs Google's connectivity check to pass, which emulators and some networks fail, and being wrongly offline pauses every query while being wrongly online only fails them with "Couldn't connect". `expo-network` is Expo's own module, versioned with the SDK; `@react-native-community/netinfo` was the alternative, but it is barely maintained and isn't a New Architecture module.
 
 ## 8. Quality
 
@@ -124,7 +126,7 @@ Shared components in `ui/`, used the same way on every screen:
 - **A development build, not Expo Go.** Expo Go is a prebuilt shell from Expo with a fixed set of native modules, Expo's package id and Expo's signing key. Native Google sign-in needs our own native module and our package id and signing key, so the app runs as a development build: our own shell with `expo-dev-client`, still loading JS from Metro with fast refresh. It's rebuilt only when native dependencies change.
 - **Continuous Native Generation:** `android/` and `ios/` are generated by `expo prebuild` from `app.config.ts` and config plugins, and gitignored. Native changes are made in config or a config plugin, never by hand. The build scripts regenerate the native project for their variant before building.
 - **Variants:** `app.config.ts` selects the package id (`com.lakaniemi.lifeapp.dev` vs `com.lakaniemi.lifeapp`), name ("Life App Dev" vs "Life App"), URL scheme (`lifeapp-dev` vs `lifeapp`), icon and API URL from one `APP_VARIANT` variable, so dev and prod install side by side and don't claim each other's links. It defaults to `development`, so a production build is always explicit. Google's Android OAuth client is keyed by package name plus signing-certificate SHA-1, so each variant and signing key needs its own (`docs/AUTH.md`).
-- **Local API:** the Android emulator reaches the Mac's `localhost` at `10.0.2.2`. A physical phone uses `adb reverse tcp:8080 tcp:8080` or the LAN IP.
+- **Local API:** the Android emulator reaches the Mac's `localhost` at `10.0.2.2`, the dev variant's default. A physical phone uses `adb reverse tcp:8080 tcp:8080` or the LAN IP, through an `API_URL` override read with the config, so in development changing it needs only a Metro restart.
 - **Distribution: GitHub Releases.** Each native release is a GitHub release with the signed APK attached under a fixed file name. The phones install it directly (sideloading). Because the asset name is fixed, `https://github.com/lakaniemi/life-app/releases/latest/download/<name>.apk` always points to the newest APK; the "Update required" screen links there ([Version compatibility](#10-version-compatibility)).
   - **No paid Expo services.** EAS Build is a paid product beyond a small free tier, so APKs are built on GitHub Actions: `expo prebuild`, then `./gradlew assembleRelease`. Once `expo-updates` is added, its Gradle plugin computes the fingerprint runtime version there too, without EAS.
   - **Signed with our own key**, which keeps the SHA-1 for Google sign-in stable. A local config plugin adds the release `signingConfig` to the generated `build.gradle`, reading the keystore and passwords from Gradle properties. The keystore is a GitHub secret, with a backup outside GitHub: Android installs an update only over an app signed with the same key, so losing it means reinstalling on every phone and registering a new SHA-1.
@@ -184,7 +186,7 @@ There is no URL or date-based versioning (`/v1`, Stripe-style version transforms
 ### Device cache
 
 - Timestamps stay **ISO strings** in schemas and are formatted in the UI. The persisted cache round-trips through JSON, so a parsed `Date` would come back as a string while its type still says `Date`.
-- The persister's `buster` identifies the running app version, so a new version starts with a fresh cache rather than reading data cached under older types. Until over-the-air updates exist, that's the APK's build version; with them, the running update's id.
+- The persister's `buster` identifies the running app version, so a new version starts with a fresh cache rather than reading data cached under older types. Until over-the-air updates exist, that's the APK's version name and `versionCode` (`expo-application`), so each release build needs a new `versionCode`; with updates, it's the running update's id.
 
 ### Not adopted, for now
 

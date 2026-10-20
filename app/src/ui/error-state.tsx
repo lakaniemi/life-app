@@ -5,7 +5,9 @@ import { Button, Icon, Text, useTheme } from "react-native-paper";
 type ErrorStateProps = {
   // Copy for what failed. Defaults to a generic message.
   message?: string;
-  onRetry: () => void;
+  // Without it there's no Retry, for failures that resolve by themselves,
+  // such as being offline.
+  onRetry?: () => void;
 };
 
 // For a failed load with nothing cached to show instead.
@@ -19,9 +21,11 @@ export const ErrorState = ({ message, onRetry }: ErrorStateProps) => {
       <Text variant="bodyLarge" style={styles.message}>
         {message ?? t("errors.generic")}
       </Text>
-      <Button mode="contained-tonal" onPress={onRetry}>
-        {t("common.retry")}
-      </Button>
+      {onRetry && (
+        <Button mode="contained-tonal" onPress={onRetry}>
+          {t("common.retry")}
+        </Button>
+      )}
     </View>
   );
 };

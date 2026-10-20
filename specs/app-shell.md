@@ -40,6 +40,7 @@ Every screen uses the same states:
 - **Loading:** a progress indicator, only when nothing has been loaded before. Reloads in the background show nothing.
 - **Empty:** an illustration or icon, a title, a short explanation and, where it makes sense, the action that fills it ("Create your first list"). Each feature's spec words its own.
 - **Error, with nothing to show:** a message and **Retry**.
+- **Offline, with nothing to show:** a message saying so, without Retry. The data loads by itself once the connection is back.
 - **Error while showing earlier data:** the data stays, with a snackbar "Couldn't refresh".
 - **Form errors:** shown next to the field they concern.
 
@@ -60,3 +61,4 @@ Every screen uses the same states:
 - Technical design: [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md).
 - App: most of this is built in the App baseline slice, and app updates in the Over-the-air updates slice.
   - The shared screen states are in `app/src/ui/` (`loading-state.tsx`, `empty-state.tsx`, `error-state.tsx`), and the snackbar host is `app/src/ui/snackbar.tsx` (#23).
+  - The API client, error copy and query setup are in `app/src/api/`: the persisted cache and "Couldn't refresh" in `query-client.ts` and `query-provider.tsx`, refetching on focus and reconnect in `managers.ts` and `use-api-query.ts`, and the offline first load in `query-state.ts`. The offline banner is `app/src/ui/offline-banner.tsx`, shown by `Screen` (#24).
