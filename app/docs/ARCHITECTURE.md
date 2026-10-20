@@ -31,9 +31,9 @@ Most of it is set up by the **App baseline** slice in the [roadmap](../../specs/
   - Alternatives: SWR (no built-in mutation retry or persistence), RTK Query (brings Redux, for very little client state), and plain `fetch` hooks (we'd rebuild all of the above).
 - **Client state is small** and lives in React context: the session (token in `expo-secure-store`) and the active family. No Redux or Zustand.
 - **The app requires a connection.** The query cache is persisted to the device (AsyncStorage, kept for 7 days, with `gcTime` as long so restored queries survive), so the app starts instantly with the last-known data and shows it read-only when offline. It's cleared on sign-out. Offline writes are not supported.
-- **Retries:** queries and mutations retry twice with backoff, but only failures that can change on a second try: no response, or a 5xx. A 4xx or a schema mismatch fails at once. TanStack Query doesn't retry mutations by default, so this is set for them too.
+- **Retries:** queries and mutations retry twice with backoff, but only failures that can change on a second try: a failed connection, or a 5xx. A 4xx or a schema mismatch fails at once, and so does a timeout, since each retry would wait the full timeout again. TanStack Query doesn't retry mutations by default, so this is set for them too.
 - **Every mutation is optimistic:** the cache updates at once and the request runs in the background. On final failure the change rolls back and a snackbar offers **Retry**.
-- **Freshness:** a 30-second `staleTime`, so moving between screens doesn't refetch every time. Stale queries refetch when the app returns to the foreground (`AppState`, wired into TanStack Query's `focusManager`) and when a screen regains focus (`useRefreshOnFocus` in `src/api/`, since React Navigation keeps screens below the top of the stack mounted). Lists support pull-to-refresh (`RefreshControl`). No polling, and no real-time push.
+- **Freshness:** a 30-second `staleTime`, so moving between screens doesn't refetch every time. Stale queries refetch when the app returns to the foreground (`AppState`, wired into TanStack Query's `focusManager`) and when a screen regains focus. React Navigation keeps the screens below the top of the stack mounted, so feature hooks use `useApiQuery` (`src/api/`, enforced by lint) instead of `useQuery`: it passes `useIsFocused()` as TanStack Query's `subscribed` option, so a screen out of focus stops counting as active and regaining focus refetches its stale queries. Lists support pull-to-refresh (`RefreshControl`). No polling, and no real-time push.
 - **Rules for new write endpoints**, so that retries and optimistic updates are safe:
   - **Client-generated UUIDs** for things the app creates, so an item can be edited (or its creation undone) before the server has answered.
   - **Idempotent writes:** "set `checked` to true", never "toggle". A replayed request gives the same result.
@@ -43,7 +43,7 @@ Most of it is set up by the **App baseline** slice in the [roadmap](../../specs/
 
 - **`src/api/`** holds a typed `fetch` wrapper and the TanStack Query setup. Each feature declares its response shapes as **hand-written zod schemas**, and the TS types are inferred from them. Responses are parsed at the boundary, so a mismatch with the API fails loudly in one place instead of as `undefined` deep in a screen.
   - Alternatives: plain TS interfaces (drift stays invisible), and an OpenAPI spec with generated types (a third artifact and toolchain to keep in sync; worth revisiting if the API grows much larger or gets a second client).
-- **Errors.** The API's envelope is `{"error": {"code", "message", "fields"?}}`. The client turns it into one `ApiError` (status, `code`, `fields`); an error status without the envelope (e.g. a proxy's error page) gets the code `unknown`. A request that gets no response at all, including one that times out after 15 seconds (React Native's `fetch` has no timeout), is a separate `NetworkError` ("Couldn't connect").
+- **Errors.** The API's envelope is `{"error": {"code", "message", "fields"?}}`. The client turns it into one `ApiError` (status, `code`, `fields`); an error status without the envelope (e.g. a proxy's error page) gets the code `unknown`. A request that doesn't reach the API is a separate `NetworkError` ("Couldn't connect"): no response, a timeout after 15 seconds (React Native's `fetch` has no timeout), or a success that isn't JSON, such as a captive portal's login page.
 - **The app owns user-facing copy**, keyed off `code` through i18n. The API's `message` is for developers and is never shown. Unknown codes get a generic message.
 - **Any 401 on an authenticated request means signed out.** Sessions are opaque and slide over 90 days, with no refresh tokens (`docs/AUTH.md`), so there's nothing to refresh. The client handles it once, centrally: see [Session lifecycle](#5-session-lifecycle).
 
@@ -98,6 +98,7 @@ Shared components in `ui/`, used the same way on every screen:
   | Situation | Behavior |
   | --- | --- |
   | A query fails, nothing cached | `ErrorState` with Retry |
+  | Offline, nothing cached | `ErrorState` saying so, without Retry (`isWaitingForConnection`): TanStack Query pauses the first fetch and runs it when back online |
   | A query fails, cached data shown | Keep the data, snackbar "Couldn't refresh" (centrally, from the query cache; at most one per 10 seconds) |
   | A mutation fails after retries | Roll back, snackbar with Retry |
   | `400 invalid_body` from a form | Inline errors per field, from `fields` |
