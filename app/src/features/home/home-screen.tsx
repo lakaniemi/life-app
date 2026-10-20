@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 
 import { errorMessage } from "@/api/error-message";
+import { isWaitingForConnection } from "@/api/query-state";
 import { useHealth, type Health } from "@/features/home/api";
 import { ErrorState } from "@/ui/error-state";
 import { LoadingState } from "@/ui/loading-state";
@@ -20,6 +21,14 @@ const statusKeys: Record<Health["status"], ParseKeys> = {
 export const HomeScreen = () => {
   const { t } = useTranslation();
   const health = useHealth();
+
+  if (isWaitingForConnection(health)) {
+    return (
+      <Screen>
+        <ErrorState message={t("errors.offline")} />
+      </Screen>
+    );
+  }
 
   if (health.isPending) {
     return (

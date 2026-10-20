@@ -1,4 +1,5 @@
-import { fireEvent, screen } from "@testing-library/react-native";
+import { onlineManager } from "@tanstack/react-query";
+import { act, fireEvent, screen } from "@testing-library/react-native";
 
 import { apiFetch } from "@/api/client";
 import { NetworkError } from "@/api/errors";
@@ -11,6 +12,7 @@ const apiFetchMock = jest.mocked(apiFetch);
 
 afterEach(() => {
   apiFetchMock.mockReset();
+  onlineManager.setOnline(true);
 });
 
 test("shows the API's health", async () => {
@@ -52,6 +54,26 @@ test("shows the error with Retry, and Retry loads again", async () => {
   expect(await screen.findByText("Couldn't connect.")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByRole("button", { name: "Retry" }));
+
+  expect(await screen.findByText("The API is up.")).toBeOnTheScreen();
+});
+
+test("says it's offline with nothing cached, and loads once back online", async () => {
+  apiFetchMock.mockResolvedValue({
+    status: "ok",
+    database: "ok",
+    version: "0123456",
+  });
+  onlineManager.setOnline(false);
+
+  await renderWithQueryClient(<HomeScreen />);
+
+  expect(
+    screen.getByText("You're offline. This will load once you're back online."),
+  ).toBeOnTheScreen();
+  expect(apiFetchMock).not.toHaveBeenCalled();
+
+  await act(() => onlineManager.setOnline(true));
 
   expect(await screen.findByText("The API is up.")).toBeOnTheScreen();
 });
