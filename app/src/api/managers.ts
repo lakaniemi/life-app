@@ -19,13 +19,21 @@ export const connectQueryManagers = () => {
     // Google's connectivity check to pass, which emulators and some networks
     // fail. Wrongly offline pauses every query; wrongly online only fails
     // them with "Couldn't connect". Unknown counts as online.
-    // The listener fires only on changes, hence the initial read.
-    void getNetworkStateAsync().then((state) => {
-      setOnline(state.isConnected !== false);
-    });
+    // The listener fires only on changes, hence the initial read. A change
+    // that arrives before the read resolves is newer, so the read then loses.
+    let hasChanged = false;
     const subscription = addNetworkStateListener((state) => {
+      hasChanged = true;
       setOnline(state.isConnected !== false);
     });
+    getNetworkStateAsync()
+      .then((state) => {
+        if (!hasChanged) {
+          setOnline(state.isConnected !== false);
+        }
+      })
+      // Without a reading, stay with TanStack Query's default: online.
+      .catch(() => {});
     return () => subscription.remove();
   });
 };
