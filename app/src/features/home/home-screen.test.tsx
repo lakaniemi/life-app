@@ -6,10 +6,6 @@ import { renderWithQueryClient } from "@/api/test-utils";
 import { HomeScreen } from "@/features/home/home-screen";
 
 jest.mock("@/api/client");
-// Needs a navigator to know about focus, which the test doesn't render.
-jest.mock("@/api/use-refresh-on-focus", () => ({
-  useRefreshOnFocus: () => {},
-}));
 
 const apiFetchMock = jest.mocked(apiFetch);
 

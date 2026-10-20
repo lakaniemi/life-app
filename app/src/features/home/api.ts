@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { apiFetch } from "@/api/client";
+import { useApiQuery } from "@/api/use-api-query";
 
 // Enum values the API may add later parse to "unknown" instead of failing the
 // whole response.
@@ -19,7 +19,7 @@ export const homeKeys = {
 };
 
 export const useHealth = () =>
-  useQuery({
+  useApiQuery({
     queryKey: homeKeys.health(),
     queryFn: ({ signal }) => apiFetch("/health", healthSchema, { signal }),
   });
