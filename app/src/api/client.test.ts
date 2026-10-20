@@ -92,6 +92,16 @@ test("throws a NetworkError when there's no response", async () => {
   expect(error).toMatchObject({ timedOut: false });
 });
 
+test("throws a NetworkError for a success that isn't JSON", async () => {
+  fetchMock.mockResolvedValue(
+    new Response("<html>Sign in to the Wi-Fi</html>", { status: 200 }),
+  );
+
+  await expect(apiFetch("/items", itemSchema)).rejects.toBeInstanceOf(
+    NetworkError,
+  );
+});
+
 test("throws a NetworkError when the request times out", async () => {
   jest.useFakeTimers();
   fetchMock.mockImplementation(

@@ -42,7 +42,21 @@ export const apiFetch = async <T>(
   if (response.status === 204) {
     return schema.parse(undefined);
   }
-  return schema.parse(await response.json());
+  return schema.parse(await readJson(response, options.method ?? "GET", path));
+};
+
+// The API always answers in JSON, so a body that isn't means the request
+// never reached it: typically a captive portal's login page.
+const readJson = async (
+  response: Response,
+  method: string,
+  path: string,
+): Promise<unknown> => {
+  try {
+    return await response.json();
+  } catch {
+    throw new NetworkError(`${method} ${path} got a response that isn't JSON`);
+  }
 };
 
 const send = async (
