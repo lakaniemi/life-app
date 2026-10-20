@@ -16,6 +16,9 @@ const itemSchema = z.object({ id: z.string() });
 
 afterEach(() => {
   fetchMock.mockReset();
+  // Here rather than in the timeout test, so that a failure there doesn't
+  // leave fake timers on for the tests after it.
+  jest.useRealTimers();
 });
 
 test("requests the path from the API and parses the response", async () => {
@@ -119,7 +122,6 @@ test("throws a NetworkError when the request times out", async () => {
   const error = await request.catch((e: unknown) => e);
   expect(error).toBeInstanceOf(NetworkError);
   expect(error).toMatchObject({ timedOut: true });
-  jest.useRealTimers();
 });
 
 test("passes a cancellation by the caller on as it is", async () => {
