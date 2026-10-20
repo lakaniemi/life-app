@@ -3,10 +3,14 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { nativeApplicationVersion, nativeBuildVersion } from "expo-application";
 import * as SplashScreen from "expo-splash-screen";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { connectQueryManagers } from "@/api/managers";
-import { cacheMaxAge, createQueryClient } from "@/api/query-client";
+import {
+  cacheMaxAge,
+  createQueryClient,
+  subscribeToRefreshErrors,
+} from "@/api/query-client";
 
 connectQueryManagers();
 
@@ -19,8 +23,7 @@ const buster = `${nativeApplicationVersion}+${nativeBuildVersion}`;
 
 type QueryProviderProps = {
   children: ReactNode;
-  // Called when a query fails while showing earlier data. Read once, when the
-  // query client is created.
+  // Called when a query fails while showing earlier data.
   onRefreshError: () => void;
 };
 
@@ -30,7 +33,15 @@ export const QueryProvider = ({
   children,
   onRefreshError,
 }: QueryProviderProps) => {
-  const [queryClient] = useState(() => createQueryClient({ onRefreshError }));
+  const [queryClient] = useState(createQueryClient);
+
+  // Resubscribes when the callback changes, so the latest one is always
+  // called. That also restarts the throttle, which at worst lets one extra
+  // snackbar through.
+  useEffect(
+    () => subscribeToRefreshErrors(queryClient, onRefreshError),
+    [queryClient, onRefreshError],
+  );
 
   // The root layout keeps the splash screen up until the cache is restored,
   // so a screen never flashes its loading state before the cached data.

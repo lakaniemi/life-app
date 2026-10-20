@@ -1,4 +1,4 @@
-import { QueryCache, QueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
 import { ApiError, NetworkError } from "@/api/errors";
 
@@ -32,33 +32,36 @@ export const shouldRetry = (failureCount: number, error: unknown): boolean => {
   return error instanceof ApiError && error.status >= 500;
 };
 
-type QueryClientOptions = {
-  // Called when a query fails while it still has earlier data to show.
-  onRefreshError: () => void;
-};
-
-export const createQueryClient = ({ onRefreshError }: QueryClientOptions) => {
-  let lastRefreshErrorAt = -Infinity;
-
-  return new QueryClient({
-    queryCache: new QueryCache({
-      onError: (_error, query) => {
-        // With nothing cached, the screen shows ErrorState itself.
-        if (query.state.data === undefined) {
-          return;
-        }
-        const now = Date.now();
-        if (now - lastRefreshErrorAt < refreshErrorThrottleMs) {
-          return;
-        }
-        lastRefreshErrorAt = now;
-        onRefreshError();
-      },
-    }),
+export const createQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: { staleTime, gcTime: cacheMaxAge, retry: shouldRetry },
       // TanStack Query doesn't retry mutations by default.
       mutations: { retry: shouldRetry },
     },
+  });
+
+// Calls onRefreshError when a query fails (after its retries) while it still
+// has earlier data to show. With nothing cached, the screen shows ErrorState
+// itself. Returns the unsubscribe function, for use in an effect.
+export const subscribeToRefreshErrors = (
+  queryClient: QueryClient,
+  onRefreshError: () => void,
+) => {
+  let lastRefreshErrorAt = -Infinity;
+
+  return queryClient.getQueryCache().subscribe((event) => {
+    if (event.type !== "updated" || event.action.type !== "error") {
+      return;
+    }
+    if (event.query.state.data === undefined) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastRefreshErrorAt < refreshErrorThrottleMs) {
+      return;
+    }
+    lastRefreshErrorAt = now;
+    onRefreshError();
   });
 };

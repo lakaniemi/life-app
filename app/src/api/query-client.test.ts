@@ -1,5 +1,9 @@
 import { ApiError, NetworkError } from "@/api/errors";
-import { createQueryClient, shouldRetry } from "@/api/query-client";
+import {
+  createQueryClient,
+  shouldRetry,
+  subscribeToRefreshErrors,
+} from "@/api/query-client";
 
 describe("shouldRetry", () => {
   test("retries a failed connection", () => {
@@ -34,7 +38,7 @@ describe("shouldRetry", () => {
   });
 });
 
-describe("onRefreshError", () => {
+describe("subscribeToRefreshErrors", () => {
   const failingQuery = {
     queryKey: ["item"],
     queryFn: () => Promise.reject(new Error("failed")),
@@ -43,24 +47,29 @@ describe("onRefreshError", () => {
     staleTime: 0,
   };
 
-  // The client's gc timers would otherwise keep Jest from exiting.
   let queryClient: ReturnType<typeof createQueryClient>;
-  afterEach(() => {
-    queryClient.clear();
+  let unsubscribe: () => void;
+  const onRefreshError = jest.fn();
+
+  beforeEach(() => {
+    queryClient = createQueryClient();
+    unsubscribe = subscribeToRefreshErrors(queryClient, onRefreshError);
   });
 
-  test("isn't called when a query fails with nothing cached", async () => {
-    const onRefreshError = jest.fn();
-    queryClient = createQueryClient({ onRefreshError });
+  afterEach(() => {
+    unsubscribe();
+    // The client's gc timers would otherwise keep Jest from exiting.
+    queryClient.clear();
+    onRefreshError.mockReset();
+  });
 
+  test("doesn't call back when a query fails with nothing cached", async () => {
     await queryClient.fetchQuery(failingQuery).catch(() => {});
 
     expect(onRefreshError).not.toHaveBeenCalled();
   });
 
-  test("is called once when queries with cached data fail together", async () => {
-    const onRefreshError = jest.fn();
-    queryClient = createQueryClient({ onRefreshError });
+  test("calls back once when queries with cached data fail together", async () => {
     queryClient.setQueryData(["a"], "cached");
     queryClient.setQueryData(["b"], "cached");
 
