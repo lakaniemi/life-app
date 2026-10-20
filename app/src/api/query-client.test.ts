@@ -2,8 +2,14 @@ import { ApiError, NetworkError } from "@/api/errors";
 import { createQueryClient, shouldRetry } from "@/api/query-client";
 
 describe("shouldRetry", () => {
-  test("retries when there was no response", () => {
-    expect(shouldRetry(0, new NetworkError("timed out"))).toBe(true);
+  test("retries a failed connection", () => {
+    expect(shouldRetry(0, new NetworkError("refused"))).toBe(true);
+  });
+
+  test("doesn't retry a timeout", () => {
+    expect(
+      shouldRetry(0, new NetworkError("timed out", { timedOut: true })),
+    ).toBe(false);
   });
 
   test("retries a server error", () => {
@@ -23,8 +29,8 @@ describe("shouldRetry", () => {
   });
 
   test("stops after two retries", () => {
-    expect(shouldRetry(1, new NetworkError("timed out"))).toBe(true);
-    expect(shouldRetry(2, new NetworkError("timed out"))).toBe(false);
+    expect(shouldRetry(1, new NetworkError("refused"))).toBe(true);
+    expect(shouldRetry(2, new NetworkError("refused"))).toBe(false);
   });
 });
 

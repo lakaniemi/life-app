@@ -26,8 +26,11 @@ export class ApiError extends Error {
 // The request got no response at all: no connection, the server unreachable,
 // or the request timed out.
 export class NetworkError extends Error {
-  constructor(message: string) {
+  readonly timedOut: boolean;
+
+  constructor(message: string, { timedOut = false } = {}) {
     super(message);
     this.name = "NetworkError";
+    this.timedOut = timedOut;
   }
 }

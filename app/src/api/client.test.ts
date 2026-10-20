@@ -86,9 +86,10 @@ test("gives an error status without an envelope the code unknown", async () => {
 test("throws a NetworkError when there's no response", async () => {
   fetchMock.mockRejectedValue(new TypeError("Network request failed"));
 
-  await expect(apiFetch("/items", itemSchema)).rejects.toBeInstanceOf(
-    NetworkError,
-  );
+  const error = await apiFetch("/items", itemSchema).catch((e: unknown) => e);
+
+  expect(error).toBeInstanceOf(NetworkError);
+  expect(error).toMatchObject({ timedOut: false });
 });
 
 test("throws a NetworkError when the request times out", async () => {
@@ -105,7 +106,9 @@ test("throws a NetworkError when the request times out", async () => {
   const request = apiFetch("/items", itemSchema);
   jest.advanceTimersByTime(15_000);
 
-  await expect(request).rejects.toBeInstanceOf(NetworkError);
+  const error = await request.catch((e: unknown) => e);
+  expect(error).toBeInstanceOf(NetworkError);
+  expect(error).toMatchObject({ timedOut: true });
   jest.useRealTimers();
 });
 

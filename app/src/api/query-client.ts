@@ -17,14 +17,17 @@ const maxRetries = 2;
 // (the API down) show one "Couldn't refresh", not a queue of them.
 const refreshErrorThrottleMs = 10 * 1000;
 
-// Retries only what may succeed on a second try: no response, or a server
-// error. A 4xx or a response that doesn't match its schema won't change.
+// Retries only what may succeed on a second try: a request that failed to
+// connect, or a server error. A 4xx or a response that doesn't match its
+// schema won't change. Nor is a timeout retried: each attempt would wait the
+// full timeout again, keeping a first load on its spinner for most of a
+// minute before the error shows.
 export const shouldRetry = (failureCount: number, error: unknown): boolean => {
   if (failureCount >= maxRetries) {
     return false;
   }
   if (error instanceof NetworkError) {
-    return true;
+    return !error.timedOut;
   }
   return error instanceof ApiError && error.status >= 500;
 };

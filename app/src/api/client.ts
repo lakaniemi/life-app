@@ -77,10 +77,13 @@ const send = async (
     if (signal?.aborted) {
       throw error;
     }
+    if (controller.signal.aborted) {
+      throw new NetworkError(`${method} ${path} timed out`, {
+        timedOut: true,
+      });
+    }
     throw new NetworkError(
-      controller.signal.aborted
-        ? `${method} ${path} timed out`
-        : `${method} ${path} got no response: ${String(error)}`,
+      `${method} ${path} got no response: ${String(error)}`,
     );
   } finally {
     clearTimeout(timeout);
