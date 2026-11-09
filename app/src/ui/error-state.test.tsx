@@ -16,6 +16,12 @@ test("shows the given message", async () => {
   expect(screen.getByText("Couldn't load the list.")).toBeOnTheScreen();
 });
 
+test("has no Retry without onRetry", async () => {
+  await render(<ErrorState />);
+
+  expect(screen.queryByRole("button", { name: "Retry" })).not.toBeOnTheScreen();
+});
+
 test("retries when Retry is pressed", async () => {
   const onRetry = jest.fn();
   await render(<ErrorState onRetry={onRetry} />);

@@ -8,11 +8,14 @@ const variants = {
     name: "Life App Dev",
     androidPackage: "com.lakaniemi.lifeapp.dev",
     scheme: "lifeapp-dev",
+    // The Android emulator reaches the Mac's localhost at 10.0.2.2.
+    apiUrl: "http://10.0.2.2:8080",
   },
   production: {
     name: "Life App",
     androidPackage: "com.lakaniemi.lifeapp",
     scheme: "lifeapp",
+    apiUrl: "https://life-app-api.lakaniemi.com",
   },
 } as const;
 
@@ -28,7 +31,8 @@ const selectedVariant = (): Variant => {
   return value as Variant;
 };
 
-const variant = variants[selectedVariant()];
+const variantName = selectedVariant();
+const variant = variants[variantName];
 
 const config: ExpoConfig = {
   name: variant.name,
@@ -63,6 +67,15 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  extra: {
+    // API_URL overrides the development variant's URL, e.g. with a LAN IP for
+    // a physical phone. In a development build the config comes from Metro, so
+    // restarting Metro picks up a new value without rebuilding. Production
+    // ignores it, so a stray API_URL can't ship a build pointing at a dev
+    // address. || rather than ??, so that an empty API_URL falls back too.
+    apiUrl:
+      (variantName === "development" && process.env.API_URL) || variant.apiUrl,
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
