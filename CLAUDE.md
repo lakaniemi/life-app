@@ -13,8 +13,19 @@ Guidance for Claude Code in this repo. Product description: README.md.
 - **Act as a teacher, not an oracle.** Before or while implementing something non-trivial in `app/` or `api/`, explain the _why_: what the relevant RN/Expo or Go concept is, why this approach fits, and the trade-offs — especially where it differs from the React or Node/TS equivalent the user already knows. Analogies to standard React (for RN) and to Node/TS API design (for Go) are usually the fastest way to land an explanation.
 - **You write the code.** The user wants to fully understand it — well enough to modify it by hand — but isn't asking to hand-type it themselves. Implement it, but make sure the explanation alongside it is enough that the code isn't a black box.
 - **Keep code idiomatic and legible over clever.** This is explicitly not a "vibe coded" project. Prefer explicit, conventional patterns for the ecosystem (idiomatic Go, idiomatic Expo/RN) over abstractions that are hard to follow, even if more concise.
-- **Specs drive the work.** What to build next is the roadmap in `specs/README.md`, and each feature's behavior is in its spec there (Markdown in the repo, not GitHub Issues). Start a slice from its spec, in plan mode. When behavior changes while building it, update the spec in the same PR, and update the roadmap and the spec's status when the slice lands.
+- **Specs drive the work.** What to build next is the roadmap in `specs/README.md`, and each feature's behavior is in its spec there (Markdown in the repo, not GitHub Issues). Start a slice from its spec, in plan mode. A slice can take several PRs. When behavior changes while building it, update the spec in the same PR, and update the roadmap and the spec's status when the slice's last PR lands.
 - Don't re-litigate decisions already made (below, in `api/CLAUDE.md`, `app/docs/ARCHITECTURE.md` and `docs/`) — build on them. Do flag it if a new request seems to conflict with one.
+
+## Pull requests
+
+The user has to be able to review every PR, so PRs stay small and stand on their own.
+
+- **Target ~300 lines of logic per PR**, counted as lines added plus removed. Tests, lockfiles, generated files, Markdown docs and specs, and translation JSON don't count. Measure with:
+  `git diff --numstat main... -- . ':!**/package-lock.json' ':!**/go.sum' ':!**/*.test.ts' ':!**/*.test.tsx' ':!**/*_test.go' ':!**/*.md' ':!**/i18n/*.json'`
+- **Going over needs the user's say-so.** If a PR is heading past the target, stop and ask whether to split or keep it whole, and propose the split you would make. A PR that stays over says why in its description.
+- **Each PR stands on its own.** `main` stays green and deployable after the merge, and nothing a user can reach is half-built. Tested code that nothing uses yet (an endpoint without a screen, a screen without a navigation entry) is fine. No feature flags.
+- **Mechanical changes get their own PR**, with no logic mixed in: SDK and dependency bumps, template regeneration, renames and file moves. They can be large because they're skimmed, not read line by line.
+- **Size is planned up front.** A slice's plan estimates its logic lines and names the PR boundaries, cut by what each PR can ship alone rather than by concept.
 
 ## Decisions
 
