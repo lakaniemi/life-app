@@ -12,7 +12,7 @@ Features share one frame: how the app is navigated, where personal settings live
 - **Active family.** The app works in one family at a time, and everything family-related on screen belongs to it. With a single family, that's simply the user's family.
 - **Home** is the first screen after sign-in: a dashboard of cards. Each feature can contribute a card, either for the family (e.g. the current shopping list) or for the user personally.
 - **No tab bar** until there are at least three main destinations. Until then, a feature opens from its Home card.
-- **The app needs a connection.** Without one, it still shows the last data it loaded, read-only, under an "Offline · showing saved data" banner.
+- **The app needs a connection.** Without one, it still shows the last data it loaded, read-only, under an "Offline · showing cached data" banner.
 - **Changes show immediately.** Edits appear as soon as they're made and are saved in the background. If saving fails after automatic retries, the change is undone and a snackbar says what failed, with **Retry**.
 - **Data stays fresh** by reloading when a screen opens or the app returns from the background. Lists can also be pulled down to refresh.
 - **App updates** download in the background. When one is ready, a snackbar "Update ready · Restart" offers to restart into it. The app never restarts on its own. This comes with the Over-the-air updates slice; until then, a new version means installing a new APK.
@@ -41,7 +41,7 @@ Every screen uses the same states:
 - **Empty:** an illustration or icon, a title, a short explanation and, where it makes sense, the action that fills it ("Create your first list"). Each feature's spec words its own.
 - **Error, with nothing to show:** a message and **Retry**.
 - **Offline, with nothing to show:** a message saying so, without Retry. The data loads by itself once the connection is back.
-- **Error while showing earlier data:** the data stays, with a snackbar "Couldn't refresh".
+- **Error while showing earlier data:** the data stays, with a snackbar "Couldn't refresh. Showing cached data."
 - **Form errors:** shown next to the field they concern.
 
 ## Non-goals

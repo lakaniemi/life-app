@@ -1,21 +1,28 @@
-import { onlineManager } from "@tanstack/react-query";
+import { onlineManager, useQueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { Icon, Text, useTheme } from "react-native-paper";
 
-const subscribe = (onChange: () => void) => onlineManager.subscribe(onChange);
+const subscribeToOnline = (onChange: () => void) =>
+  onlineManager.subscribe(onChange);
 const isOnline = () => onlineManager.isOnline();
 
 // Shown while offline, when screens show their cached data read-only. It
 // follows TanStack Query's online state, so the banner is up exactly while
-// queries are paused.
+// queries are paused. With nothing cached it stays hidden: there is no data
+// to point at, and the screen's own offline message says so instead.
 export const OfflineBanner = () => {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const online = useSyncExternalStore(subscribe, isOnline);
+  const queryCache = useQueryClient().getQueryCache();
+  const online = useSyncExternalStore(subscribeToOnline, isOnline);
+  const hasCachedData = useSyncExternalStore(
+    (onChange) => queryCache.subscribe(onChange),
+    () => queryCache.findAll().some((query) => query.state.data !== undefined),
+  );
 
-  if (online) {
+  if (online || !hasCachedData) {
     return null;
   }
 

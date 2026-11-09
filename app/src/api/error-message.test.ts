@@ -2,13 +2,15 @@ import { errorMessage } from "@/api/error-message";
 import { ApiError, NetworkError } from "@/api/errors";
 
 test("says it couldn't connect when there was no response", () => {
-  expect(errorMessage(new NetworkError("timed out"))).toBe("Couldn't connect.");
+  expect(errorMessage(new NetworkError("timed out"))).toBe(
+    "Couldn't connect. Check your connection and try again.",
+  );
 });
 
 test("picks the copy for a known code", () => {
   expect(
     errorMessage(new ApiError(500, "internal", "internal server error")),
-  ).toBe("Something went wrong on the server.");
+  ).toBe("The server had a problem. Try again in a moment.");
 });
 
 test("falls back to a generic message for an unknown code", () => {

@@ -5,10 +5,10 @@
   },
   "errors": {
     "generic": "Something went wrong.",
-    "internal": "Something went wrong on the server.",
-    "network": "Couldn't connect.",
+    "internal": "The server had a problem. Try again in a moment.",
+    "network": "Couldn't connect. Check your connection and try again.",
     "offline": "You're offline. This will load once you're back online.",
-    "refreshFailed": "Couldn't refresh"
+    "refreshFailed": "Couldn't refresh. Showing cached data."
   },
   "home": {
     "title": "Life App",
@@ -20,6 +20,6 @@
     "apiVersion": "API version {{version}}"
   },
   "offline": {
-    "banner": "Offline · showing saved data"
+    "banner": "Offline · showing cached data"
   }
 }

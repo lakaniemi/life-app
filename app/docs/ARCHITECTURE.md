@@ -99,7 +99,7 @@ Shared components in `ui/`, used the same way on every screen:
   | --- | --- |
   | A query fails, nothing cached | `ErrorState` with Retry |
   | Offline, nothing cached | `ErrorState` saying so, without Retry (`isWaitingForConnection`): TanStack Query pauses the first fetch and runs it when back online |
-  | A query fails, cached data shown | Keep the data, snackbar "Couldn't refresh" (centrally, from the query cache; at most one per 10 seconds) |
+  | A query fails, cached data shown | Keep the data, snackbar "Couldn't refresh. Showing cached data." (centrally, from the query cache; at most one per 10 seconds) |
   | A mutation fails after retries | Roll back, snackbar with Retry |
   | `400 invalid_body` from a form | Inline errors per field, from `fields` |
   | 401, or removed from the family | Handled centrally ([Session lifecycle](#5-session-lifecycle)) |
@@ -108,7 +108,7 @@ Shared components in `ui/`, used the same way on every screen:
 - **One global snackbar host with a queue:** a small provider plus `useSnackbar()`, because Paper's `Snackbar` is only a component.
 - **Each screen handles its states explicitly** with these components (`if (isPending) … if (isError) …`). No generic `QueryBoundary` wrapper; a few more lines, but visible and easy to vary.
 - **Destructive actions:** heavy or irreversible ones (delete a family, leave) always get a confirmation dialog. Whether a lighter action offers an Undo snackbar is decided per action, in its spec's UI section. With client-generated ids, undoing a delete re-creates the item with the same id.
-- **Offline banner:** "Offline · showing saved data", at the top of every `Screen`. `expo-network` feeds TanStack Query's `onlineManager`, and the banner reads `onlineManager`, so it shows exactly while queries are paused. Online means `isConnected`, not `isInternetReachable`: on Android the latter needs Google's connectivity check to pass, which emulators and some networks fail, and being wrongly offline pauses every query while being wrongly online only fails them with "Couldn't connect". `expo-network` is Expo's own module, versioned with the SDK; `@react-native-community/netinfo` was the alternative, but it is barely maintained and isn't a New Architecture module.
+- **Offline banner:** "Offline · showing cached data", at the top of every `Screen` while the query cache holds data (with nothing cached, the screen's own offline message says so instead). `expo-network` feeds TanStack Query's `onlineManager`, and the banner reads `onlineManager`, so it shows exactly while queries are paused. Online means `isConnected`, not `isInternetReachable`: on Android the latter needs Google's connectivity check to pass, which emulators and some networks fail, and being wrongly offline pauses every query while being wrongly online only fails them with "Couldn't connect". `expo-network` is Expo's own module, versioned with the SDK; `@react-native-community/netinfo` was the alternative, but it is barely maintained and isn't a New Architecture module.
 
 ## 8. Quality
 

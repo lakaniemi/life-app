@@ -51,7 +51,11 @@ test("shows the error with Retry, and Retry loads again", async () => {
 
   await renderWithQueryClient(<HomeScreen />);
 
-  expect(await screen.findByText("Couldn't connect.")).toBeOnTheScreen();
+  expect(
+    await screen.findByText(
+      "Couldn't connect. Check your connection and try again.",
+    ),
+  ).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByRole("button", { name: "Retry" }));
 
