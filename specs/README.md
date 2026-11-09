@@ -19,7 +19,7 @@ Unrefined ideas go in [ideas.md](ideas.md).
 
 ## Roadmap
 
-The next slices, in order. Each one is a single PR unless noted.
+The next slices, in order. Each slice is one or more PRs. Its plan sizes and splits it (see Workflow).
 
 1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). Five PRs, in order:
    1. ~~Dev build and tooling~~ (done, #20): SDK 58, the development build and the dev and prod variants, the folder structure replacing the template's leftovers, Jest and React Native Testing Library, and app CI
@@ -40,8 +40,8 @@ The next slices, in order. Each one is a single PR unless noted.
 1. **Capture:** an idea goes into `ideas.md` as a line or two.
 2. **Specify:** in a session without code, the idea becomes a feature spec. Open questions are listed explicitly rather than guessed.
 3. **Roadmap:** the spec's next PR-sized slices are added to the roadmap above, in order.
-4. **Plan:** a slice starts in plan mode with a technical plan, re-checking library and vendor docs then. The plan isn't committed. Its outcome lands in code, docs and the PR description.
-5. **Implement:** one slice per PR. If behavior changes while building it, the spec changes in the same PR. The slice leaves the roadmap, and the spec's status and Implementation section are updated.
+4. **Plan:** a slice starts in plan mode with a technical plan, re-checking library and vendor docs then. The plan estimates the logic lines and lists the PRs, each about 300 lines or less and able to stand on its own (see `CLAUDE.md`, Pull requests). The plan isn't committed. Its outcome lands in code, docs and the PR descriptions.
+5. **Implement:** one PR at a time, in the planned order. If behavior changes while building it, the spec changes in the same PR. When the slice's last PR lands, the slice leaves the roadmap, and the spec's status and Implementation section are updated.
 
 Open questions are resolved, or explicitly deferred, before the slice that needs them.
 
