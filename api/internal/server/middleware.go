@@ -60,6 +60,7 @@ func newLogRequests(logger *slog.Logger) middleware {
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", rec.status,
+				"app_compat_level", r.Header.Get(appCompatLevelHeader),
 				"duration", time.Since(start).String(),
 			)
 		})
