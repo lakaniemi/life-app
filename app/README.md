@@ -24,7 +24,7 @@ A physical phone works too, over USB with debugging on. The dev build loads Java
 
 ### Local API
 
-The dev variant calls the API at `http://10.0.2.2:8080`, the emulator's address for the Mac's `localhost`, so run the API locally (`api/README.md`). A physical phone can't use that address. Either run `adb reverse tcp:8080 tcp:8080` and start Metro with `API_URL=http://localhost:8080 npm start`, or set `API_URL` to the Mac's LAN address. The URL comes from Metro's config, so changing it only needs a Metro restart, not a rebuild.
+The dev variant calls the API at `http://10.0.2.2:8080`, the emulator's address for the Mac's `localhost`, so run the API locally (`api/README.md`). A physical phone can't use that address. Either run `adb reverse tcp:8080 tcp:8080` and start Metro with `API_URL=http://localhost:8080 npm start`, or set `API_URL` to the Mac's LAN address. Only the dev variant honors `API_URL`; production always uses its own URL. The URL comes from Metro's config, so changing it only needs a Metro restart, not a rebuild.
 
 ## Variants
 

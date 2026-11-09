@@ -31,7 +31,8 @@ const selectedVariant = (): Variant => {
   return value as Variant;
 };
 
-const variant = variants[selectedVariant()];
+const variantName = selectedVariant();
+const variant = variants[variantName];
 
 const config: ExpoConfig = {
   name: variant.name,
@@ -67,10 +68,13 @@ const config: ExpoConfig = {
     ],
   ],
   extra: {
-    // API_URL overrides the variant's URL, e.g. with a LAN IP for a physical
-    // phone. In a development build the config comes from Metro, so
-    // restarting Metro picks up a new value without rebuilding.
-    apiUrl: process.env.API_URL ?? variant.apiUrl,
+    // API_URL overrides the development variant's URL, e.g. with a LAN IP for
+    // a physical phone. In a development build the config comes from Metro, so
+    // restarting Metro picks up a new value without rebuilding. Production
+    // ignores it, so a stray API_URL can't ship a build pointing at a dev
+    // address. || rather than ??, so that an empty API_URL falls back too.
+    apiUrl:
+      (variantName === "development" && process.env.API_URL) || variant.apiUrl,
   },
   experiments: {
     typedRoutes: true,
