@@ -17,5 +17,5 @@ import (
 func New(logger *slog.Logger, pool *pgxpool.Pool, verifier auth.TokenVerifier, version string) http.Handler {
 	mux := http.NewServeMux()
 	addRoutes(mux, logger, pool, verifier, version)
-	return withMiddlewares(newLogRequests(logger), newAttachLogger(logger))(mux)
+	return withMiddlewares(newLogRequests(logger), newAttachLogger(logger), newRequireAppCompat(logger))(mux)
 }
