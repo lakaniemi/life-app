@@ -21,5 +21,10 @@
   },
   "offline": {
     "banner": "Offline · showing cached data"
+  },
+  "updateRequired": {
+    "title": "Update required",
+    "body": "This version of Life App is too old. Install the latest version to continue.",
+    "download": "Download update"
   }
 }

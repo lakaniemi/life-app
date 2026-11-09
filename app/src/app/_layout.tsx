@@ -3,6 +3,7 @@ import "@/i18n/i18n";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 
+import { UpdateGate } from "@/features/app-update/update-gate";
 import { AppProviders } from "@/ui/app-providers";
 
 // Kept up until the persisted query cache is restored (QueryProvider hides
@@ -12,7 +13,9 @@ void SplashScreen.preventAutoHideAsync();
 const RootLayout = () => {
   return (
     <AppProviders>
-      <Stack />
+      <UpdateGate>
+        <Stack />
+      </UpdateGate>
     </AppProviders>
   );
 };

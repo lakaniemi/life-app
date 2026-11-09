@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 import { apiFetch } from "@/api/client";
+import { appCompatLevel, markAppOutdated } from "@/api/compat";
 import { ApiError, NetworkError } from "@/api/errors";
+
+jest.mock("@/api/compat", () => ({
+  ...jest.requireActual<typeof import("@/api/compat")>("@/api/compat"),
+  markAppOutdated: jest.fn(),
+}));
 
 // jest.setup.ts mocks the API URL as https://api.test.
 const fetchMock = jest.spyOn(globalThis, "fetch");
@@ -16,6 +22,7 @@ const itemSchema = z.object({ id: z.string() });
 
 afterEach(() => {
   fetchMock.mockReset();
+  jest.mocked(markAppOutdated).mockClear();
   // Here rather than in the timeout test, so that a failure there doesn't
   // leave fake timers on for the tests after it.
   jest.useRealTimers();
@@ -29,6 +36,46 @@ test("requests the path from the API and parses the response", async () => {
     "https://api.test/items/a",
     expect.objectContaining({ method: "GET" }),
   );
+});
+
+test("sends the compatibility level with every request", async () => {
+  fetchMock.mockResolvedValue(jsonResponse(200, { id: "a" }));
+
+  await apiFetch("/items/a", itemSchema);
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    "https://api.test/items/a",
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        "App-Compat-Level": String(appCompatLevel),
+      }),
+    }),
+  );
+});
+
+test("marks the app outdated when the API turns it away", async () => {
+  fetchMock.mockResolvedValue(
+    jsonResponse(400, {
+      error: { code: "app_outdated", message: "this app version is too old" },
+    }),
+  );
+
+  await expect(apiFetch("/items", itemSchema)).rejects.toMatchObject({
+    status: 400,
+    code: "app_outdated",
+  });
+  expect(markAppOutdated).toHaveBeenCalledTimes(1);
+});
+
+test("doesn't mark the app outdated for other errors", async () => {
+  fetchMock.mockResolvedValue(
+    jsonResponse(400, {
+      error: { code: "invalid_body", message: "invalid request body" },
+    }),
+  );
+
+  await expect(apiFetch("/items", itemSchema)).rejects.toBeInstanceOf(ApiError);
+  expect(markAppOutdated).not.toHaveBeenCalled();
 });
 
 test("sends a body as JSON", async () => {
