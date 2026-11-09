@@ -9,6 +9,7 @@ import { connectQueryManagers } from "@/api/managers";
 import {
   cacheMaxAge,
   createQueryClient,
+  shouldPersistQuery,
   subscribeToRefreshErrors,
 } from "@/api/query-client";
 
@@ -49,7 +50,12 @@ export const QueryProvider = ({
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: cacheMaxAge, buster }}
+      persistOptions={{
+        persister,
+        maxAge: cacheMaxAge,
+        buster,
+        dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+      }}
       onSuccess={SplashScreen.hide}
       onError={SplashScreen.hide}
     >

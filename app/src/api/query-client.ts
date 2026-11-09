@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, type Query } from "@tanstack/react-query";
 
 import { ApiError, NetworkError } from "@/api/errors";
 
@@ -31,6 +31,14 @@ export const shouldRetry = (failureCount: number, error: unknown): boolean => {
   }
   return error instanceof ApiError && error.status >= 500;
 };
+
+// Persists every query that has data. A query whose refresh failed has status
+// "error" but keeps its earlier data, and TanStack Query's default persists
+// only status "success". The persister rewrites the whole cache on each
+// change, so with the default the first failed refresh would delete that data
+// from storage, and the next cold start offline would have nothing to show.
+export const shouldPersistQuery = (query: Query): boolean =>
+  query.state.data !== undefined;
 
 export const createQueryClient = () =>
   new QueryClient({

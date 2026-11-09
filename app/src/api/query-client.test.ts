@@ -1,6 +1,9 @@
+import { dehydrate } from "@tanstack/react-query";
+
 import { ApiError, NetworkError } from "@/api/errors";
 import {
   createQueryClient,
+  shouldPersistQuery,
   shouldRetry,
   subscribeToRefreshErrors,
 } from "@/api/query-client";
@@ -35,6 +38,47 @@ describe("shouldRetry", () => {
   test("stops after two retries", () => {
     expect(shouldRetry(1, new NetworkError("refused"))).toBe(true);
     expect(shouldRetry(2, new NetworkError("refused"))).toBe(false);
+  });
+});
+
+describe("shouldPersistQuery", () => {
+  const failingQuery = {
+    queryFn: () => Promise.reject(new Error("failed")),
+    retry: false,
+    staleTime: 0,
+  };
+
+  let queryClient: ReturnType<typeof createQueryClient>;
+
+  beforeEach(() => {
+    queryClient = createQueryClient();
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
+  const persistedKeys = () =>
+    dehydrate(queryClient, {
+      shouldDehydrateQuery: shouldPersistQuery,
+    }).queries.map((query) => query.queryKey);
+
+  test("keeps the data of a query whose refresh failed", async () => {
+    queryClient.setQueryData(["item"], "cached");
+    await queryClient
+      .fetchQuery({ ...failingQuery, queryKey: ["item"] })
+      .catch(() => {});
+
+    expect(queryClient.getQueryState(["item"])?.status).toBe("error");
+    expect(persistedKeys()).toEqual([["item"]]);
+  });
+
+  test("doesn't persist a query that failed with nothing cached", async () => {
+    await queryClient
+      .fetchQuery({ ...failingQuery, queryKey: ["item"] })
+      .catch(() => {});
+
+    expect(persistedKeys()).toEqual([]);
   });
 });
 
