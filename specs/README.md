@@ -25,7 +25,7 @@ The next slices, in order. Each slice is one or more PRs. Its plan sizes and spl
    1. ~~Dev build and tooling~~ (done, #20): SDK 58, the development build and the dev and prod variants, the folder structure replacing the template's leftovers, Jest and React Native Testing Library, and app CI
    2. ~~UI foundation~~ (done, #23): the Paper theme, i18n, the shared loading, empty and error states, and the snackbar host
    3. ~~Data layer~~ (done, #24): the API client and `ApiError`, the query client with its persisted cache and the focus and online wiring, and the offline banner
-   4. **API compatibility level**: the app's header and "Update required" screen, and the API's minimum-level middleware
+   4. ~~API compatibility level~~ (done, #27 and the app PR): the app's header and "Update required" screen, and the API's minimum-level middleware
    5. **Release APKs**: signed on GitHub Actions and published as GitHub releases. Last, so that no installed app lacks the "Update required" handling.
 2. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
 3. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
