@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  appCompatLevel,
+  appCompatLevelHeader,
+  appOutdatedCode,
+  markAppOutdated,
+} from "@/api/compat";
 import { apiUrl } from "@/api/config";
 import { ApiError, NetworkError } from "@/api/errors";
 
@@ -37,7 +43,13 @@ export const apiFetch = async <T>(
   const response = await send(path, options);
 
   if (!response.ok) {
-    throw await toApiError(response);
+    const error = await toApiError(response);
+    // Here rather than in the query cache, so that every kind of request is
+    // covered, mutations and one-off calls included.
+    if (error.code === appOutdatedCode) {
+      markAppOutdated();
+    }
+    throw error;
   }
   if (response.status === 204) {
     return schema.parse(undefined);
@@ -73,7 +85,10 @@ const send = async (
   }
   signal?.addEventListener("abort", abort);
 
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    [appCompatLevelHeader]: String(appCompatLevel),
+  };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
