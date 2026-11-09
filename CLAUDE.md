@@ -31,6 +31,7 @@ The user has to be able to review every PR, so PRs stay small and stand on their
 
 - **Stack:** `app/` is React Native + Expo (TypeScript). `api/` is Go with stdlib `net/http` and no framework; revisit (e.g. chi) only if it feels thin. The database is PostgreSQL: Postgres 18 locally in Docker, with SQL kept portable to 17. API-specific decisions are in `api/CLAUDE.md`, and the app's architecture is in `app/docs/ARCHITECTURE.md`.
 - **Auth:** native Google sign-in; the API verifies the ID token and issues its own opaque session. See `docs/AUTH.md`.
+- **`app_outdated` is a 400.** An app below the API's minimum compatibility level gets 400 `app_outdated`, following Google's AIP-193 (FAILED_PRECONDITION is 400). 426 is meant for protocol upgrades, and the app acts on the `code` anyway.
 - **Portability hedge:** keep the API coupled to nothing but a `DATABASE_URL` and a container image (multi-stage build on `distroless/static`). That keeps a provider switch to an afternoon. The image is the contract with hosting: `/api` as the entrypoint and `/migrate` beside it, configured only through env vars, built for `linux/amd64`.
 - **Hosting:** a shared server configured in a separate repo, `lakaniemi/infra`; its design and open decisions live there. What this repo must keep working for it:
   - **Merging to `main` deploys.** CI publishes `ghcr.io/lakaniemi/life-app-api:<sha>`, moves `:production`, calls the server's deploy hook and waits for `/health` to report the commit (`.github/scripts/deploy-api.sh`). The hook only asks the server to check `:production`, so the server decides what runs. `DEPLOY_WEBHOOK_TOKEN` is used only by the publish and rollback jobs, never on pull requests.
@@ -44,7 +45,6 @@ The user has to be able to review every PR, so PRs stay small and stand on their
 Don't present these as decided.
 
 - **Over-the-air update server.** The app uses the stock `expo-updates` client against a self-hosted server implementing the Expo Updates protocol, not EAS Update. Which server (xprem, formerly expo-open-ota, or our own in Go) is decided when the Over-the-air updates slice is planned, the last on the roadmap.
-- **The HTTP status for `app_outdated`.** Decided when the API compatibility level is built.
 - **Dependency maintenance.** How new versions (Expo SDK patches, npm and Go packages) get noticed and bumped. App CI checks versions only against the installed SDK, so nothing flags new patches yet.
 
 Update these lists as decisions get made, so future sessions don't need to re-derive context from conversation history.

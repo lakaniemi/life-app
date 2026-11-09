@@ -59,6 +59,7 @@ Every screen uses the same states:
 ## Implementation
 
 - Technical design: [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md).
+- API: the minimum compatibility level is enforced by `api/internal/server/compat.go`.
 - App: most of this is built in the App baseline slice, and app updates in the Over-the-air updates slice.
   - The shared screen states are in `app/src/ui/` (`loading-state.tsx`, `empty-state.tsx`, `error-state.tsx`), and the snackbar host is `app/src/ui/snackbar.tsx` (#23).
   - The API client, error copy and query setup are in `app/src/api/`: the persisted cache and "Couldn't refresh" in `query-client.ts` and `query-provider.tsx`, refetching on focus and reconnect in `managers.ts` and `use-api-query.ts`, and the offline first load in `query-state.ts`. The offline banner is `app/src/ui/offline-banner.tsx`, shown by `Screen` (#24).
