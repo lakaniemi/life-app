@@ -57,7 +57,8 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: npm ci
-      # Secrets are text, so the keystore is stored base64-encoded.
+      # A secret can only hold text, but a keystore is a binary file, so it's
+      # stored base64-encoded and decoded back to the file here.
       - name: Decode the keystore
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/life-app-release.jks"
         env:
@@ -69,7 +70,6 @@ jobs:
           APP_VARIANT: production
           EXPO_NO_GIT_STATUS: 1
           CI: 1
-      # plugins/with-release-signing.ts makes Gradle read these properties.
       - name: Build the release APK
         working-directory: app/android
         run: ./gradlew assembleRelease
