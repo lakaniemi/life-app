@@ -39,6 +39,7 @@ The user has to be able to review every PR, so PRs stay small and stand on their
   - **Migrations run as a one-off `/migrate up` before the new API replaces the old one**, so the old API still serves during them (`api/CLAUDE.md`, Database).
   - **`GET /health`** stays public and cheap. Its `version` (the build's commit) is how a deploy is confirmed.
   - Postgres runs on the same host, reachable only on an internal network, so the API connects without TLS.
+- **App releases:** the signed APK is a GitHub release (`life-app.apk`, built on GitHub Actions, no EAS). Bumping `app/version.json` (version and `versionCode`, by hand) on `main` triggers the release, and CI refuses an APK not signed with the release key. See `app/README.md`, Releasing.
 
 ## Open decisions
 

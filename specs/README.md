@@ -12,7 +12,7 @@ A family life-management app. Users sign in with Google and belong to one or mor
 | ------- | ---- | ------ |
 | Sign-in | [sign-in.md](sign-in.md) | in progress: API built, app not |
 | Families, members and invites | [families.md](families.md) | in progress: API built, app not |
-| App shell | [app-shell.md](app-shell.md) | specified |
+| App shell | [app-shell.md](app-shell.md) | in progress: baseline built, over-the-air updates not |
 | Shopping | [shopping.md](shopping.md) | specified |
 
 Unrefined ideas go in [ideas.md](ideas.md).
@@ -21,19 +21,13 @@ Unrefined ideas go in [ideas.md](ideas.md).
 
 The next slices, in order. Each slice is one or more PRs. Its plan sizes and splits it (see Workflow).
 
-1. **App baseline**: the foundation from [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md), with no features yet ([app-shell.md](app-shell.md)). Five PRs, in order:
-   1. ~~Dev build and tooling~~ (done, #20): SDK 58, the development build and the dev and prod variants, the folder structure replacing the template's leftovers, Jest and React Native Testing Library, and app CI
-   2. ~~UI foundation~~ (done, #23): the Paper theme, i18n, the shared loading, empty and error states, and the snackbar host
-   3. ~~Data layer~~ (done, #24): the API client and `ApiError`, the query client with its persisted cache and the focus and online wiring, and the offline banner
-   4. ~~API compatibility level~~ (done, #27 and #28): the app's header and "Update required" screen, and the API's minimum-level middleware
-   5. **Release APKs**: signed on GitHub Actions and published as GitHub releases. Last, so that no installed app lacks the "Update required" handling. The APK must be attached as exactly `life-app.apk`, because the "Update required" screen links to `releases/latest/download/life-app.apk`.
-2. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
-3. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
-4. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
-5. **Shopping API: catalogue**: catalogue items and the category keys ([shopping.md](shopping.md))
-6. **Shopping API: lists**: lists and items, ticking, and finishing with carry-over ([shopping.md](shopping.md))
-7. **App shopping**: the Home card, the Shopping screen, the list screen, "Add items", finishing, past lists and the catalogue editor ([shopping.md](shopping.md#ui)). The spec's UI is only a baseline, so this slice starts by refining the UX of "Add items" and of the catalogue editor. It may split into several PRs when planned.
-8. **Over-the-air updates**: `expo-updates` against a self-hosted update server, and the "Update ready · Restart" snackbar ([app-shell.md](app-shell.md)). Split out of the App baseline because it needs an update server to choose and host. Until it lands, every app change reaches the phones as a new APK.
+1. **App sign-in**: sign in with Google, stay signed in, sign out ([sign-in.md](sign-in.md))
+2. **App families**: first run (create a family), family screen, roles, leave and delete ([families.md](families.md#ui))
+3. **App invites**: show an invite as a QR code and a link, and join by scanning or pasting one ([families.md](families.md#ui))
+4. **Shopping API: catalogue**: catalogue items and the category keys ([shopping.md](shopping.md))
+5. **Shopping API: lists**: lists and items, ticking, and finishing with carry-over ([shopping.md](shopping.md))
+6. **App shopping**: the Home card, the Shopping screen, the list screen, "Add items", finishing, past lists and the catalogue editor ([shopping.md](shopping.md#ui)). The spec's UI is only a baseline, so this slice starts by refining the UX of "Add items" and of the catalogue editor. It may split into several PRs when planned.
+7. **Over-the-air updates**: `expo-updates` against a self-hosted update server, and the "Update ready · Restart" snackbar ([app-shell.md](app-shell.md)). Split out of the App baseline because it needs an update server to choose and host. Until it lands, every app change reaches the phones as a new APK.
 
 ## Workflow
 
