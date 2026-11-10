@@ -8,7 +8,8 @@ import { QueryProvider } from "@/api/query-provider";
 import { SnackbarProvider, useSnackbar } from "@/ui/snackbar";
 import { useAppTheme } from "@/ui/theme";
 
-// The composition root, and so the one place in ui/ that imports api/.
+// The composition root, and so a place in ui/ that imports api/ (the offline
+// banner is the other).
 export const AppProviders = ({ children }: { children: ReactNode }) => {
   const theme = useAppTheme();
 

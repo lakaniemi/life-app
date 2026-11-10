@@ -73,6 +73,17 @@ describe("shouldPersistQuery", () => {
     expect(persistedKeys()).toEqual([["item"]]);
   });
 
+  test("doesn't persist a query that opts out with meta", async () => {
+    await queryClient.fetchQuery({
+      queryKey: ["session-only"],
+      queryFn: () => "data",
+      meta: { persist: false },
+    });
+    queryClient.setQueryData(["item"], "cached");
+
+    expect(persistedKeys()).toEqual([["item"]]);
+  });
+
   test("doesn't persist a query that failed with nothing cached", async () => {
     await queryClient
       .fetchQuery({ ...failingQuery, queryKey: ["item"] })

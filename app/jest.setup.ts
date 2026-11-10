@@ -18,4 +18,7 @@ jest.mock("expo-router", () => ({
 
 // The real URL comes from app.config.ts through expo-constants, which tests
 // don't load. No test reaches the network: they mock fetch or the client.
-jest.mock("@/api/config", () => ({ apiUrl: "https://api.test" }));
+jest.mock("@/api/config", () => ({
+  apiUrl: "https://api.test",
+  latestReleaseUrl: "https://releases.test/latest.json",
+}));

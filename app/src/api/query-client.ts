@@ -37,8 +37,10 @@ export const shouldRetry = (failureCount: number, error: unknown): boolean => {
 // only status "success". The persister rewrites the whole cache on each
 // change, so with the default the first failed refresh would delete that data
 // from storage, and the next cold start offline would have nothing to show.
+// A query can opt out with `meta: { persist: false }`, for what only holds for
+// the running session, such as the check for a newer release.
 export const shouldPersistQuery = (query: Query): boolean =>
-  query.state.data !== undefined;
+  query.meta?.persist !== false && query.state.data !== undefined;
 
 export const createQueryClient = () =>
   new QueryClient({

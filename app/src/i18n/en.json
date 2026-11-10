@@ -1,4 +1,10 @@
 {
+  "appUpdate": {
+    "available": "A new version is available. Update now?",
+    "versions": "Current: {{current}} · New: {{latest}}",
+    "later": "Later",
+    "install": "Install"
+  },
   "common": {
     "loading": "Loading",
     "retry": "Retry"

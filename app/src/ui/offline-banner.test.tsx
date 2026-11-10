@@ -45,6 +45,19 @@ test("shows while offline and hides when the connection returns", async () => {
   expect(screen.queryByText(bannerText)).not.toBeOnTheScreen();
 });
 
+test("doesn't count a query that opts out of persistence as cached data", async () => {
+  await queryClient.fetchQuery({
+    queryKey: ["session-only"],
+    queryFn: () => "data",
+    meta: { persist: false },
+  });
+  await renderBanner();
+
+  await act(() => onlineManager.setOnline(false));
+
+  expect(screen.queryByText(bannerText)).not.toBeOnTheScreen();
+});
+
 test("is hidden while offline with nothing cached, and shows once data arrives", async () => {
   await renderBanner();
 
