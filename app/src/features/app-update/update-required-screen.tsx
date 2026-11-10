@@ -3,10 +3,7 @@ import { Linking, StyleSheet, View } from "react-native";
 import { Button, Icon, Text, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// The release workflow attaches the APK under this fixed name, so the URL
-// always points to the newest one (docs/ARCHITECTURE.md, "Distribution").
-export const latestApkUrl =
-  "https://github.com/lakaniemi/life-app/releases/latest/download/life-app.apk";
+import { latestApkUrl } from "@/features/app-update/install-apk";
 
 // Blocks the whole app when the API has turned it away as too old. The only
 // fix is a new APK.

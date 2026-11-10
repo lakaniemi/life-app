@@ -1,9 +1,14 @@
 {
   "appUpdate": {
+    "title": "Install update",
     "available": "A new version is available. Update now?",
     "versions": "Current: {{current}} · New: {{latest}}",
     "later": "Later",
-    "install": "Install"
+    "install": "Install",
+    "downloading": "Downloading the update…",
+    "downloadingProgress": "Downloading the update… {{percent}}%",
+    "downloadFailed": "Couldn't download the update.",
+    "downloadFromGithub": "Download from GitHub"
   },
   "common": {
     "loading": "Loading",

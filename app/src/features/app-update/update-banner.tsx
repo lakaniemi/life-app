@@ -1,11 +1,10 @@
 import { nativeApplicationVersion } from "expo-application";
+import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Linking } from "react-native";
 import { Banner, Icon, Text, useTheme } from "react-native-paper";
 
 import { useNewerRelease } from "@/features/app-update/latest-release";
-import { latestApkUrl } from "@/features/app-update/update-required-screen";
 import type { AppPaperTheme } from "@/ui/theme";
 
 // Offers a newer release at the top of Home, and nothing when there isn't
@@ -34,9 +33,7 @@ export const UpdateBanner = () => {
         { label: t("appUpdate.later"), onPress: () => setDismissed(true) },
         {
           label: t("appUpdate.install"),
-          // Until the app downloads and installs the APK itself, the browser
-          // does it.
-          onPress: () => void Linking.openURL(latestApkUrl),
+          onPress: () => router.push("/update"),
         },
       ]}
     >
