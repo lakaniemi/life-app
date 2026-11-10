@@ -1,0 +1,104 @@
+name: app-release
+
+# Publishes a GitHub release with the signed APK when a push to main bumps
+# app/version.json. Pushes that leave the version unchanged do nothing.
+# Re-run by hand (workflow_dispatch) if a run fails: a release only counts once
+# its app-v<version> tag exists, so the next run tries again.
+#
+# The APK is always attached as life-app.apk, because the app's "Update
+# required" screen links to releases/latest/download/life-app.apk.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/version.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time, and never cancelled halfway.
+concurrency:
+  group: app-release
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: check
+        run: .github/scripts/check-app-version.sh
+
+  release:
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APK: app/android/app/build/outputs/apk/release/app-release.apk
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: app/.nvmrc
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+      # Secrets are text, so the keystore is stored base64-encoded.
+      - name: Decode the keystore
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/life-app-release.jks"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      - name: Generate the native project
+        working-directory: app
+        run: npx expo prebuild --platform android --clean
+        env:
+          APP_VARIANT: production
+          EXPO_NO_GIT_STATUS: 1
+          CI: 1
+      # plugins/with-release-signing.ts makes Gradle read these properties.
+      - name: Build the release APK
+        working-directory: app/android
+        run: ./gradlew assembleRelease
+        env:
+          ORG_GRADLE_PROJECT_lifeAppUploadStoreFile: ${{ runner.temp }}/life-app-release.jks
+          ORG_GRADLE_PROJECT_lifeAppUploadStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_lifeAppUploadKeyAlias: ${{ secrets.ANDROID_KEY_ALIAS }}
+      # Without the keystore properties Gradle falls back to the debug key, which
+      # still produces a valid APK. This is what stops one from being published.
+      - name: Check the APK is signed with the release key
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
+          actual=$("$apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          # keytool prints AA:BB:…, apksigner prints aabb…
+          expected=$(echo "$EXPECTED_CERT_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
+          if [[ -z "$expected" || "$actual" != "$expected" ]]; then
+            echo "::error::The APK's signing certificate is '${actual:-none}', expected '${expected:-unset}' (ANDROID_RELEASE_CERT_SHA256)."
+            exit 1
+          fi
+          echo "Signed with the release key ($actual)"
+        env:
+          EXPECTED_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      - name: Publish the release
+        run: |
+          version=$(jq -r '.version' app/version.json)
+          cp "$APK" life-app.apk
+          gh release create "app-v$version" life-app.apk \
+            --target "$GITHUB_SHA" \
+            --title "Life App $version" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
