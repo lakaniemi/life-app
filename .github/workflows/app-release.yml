@@ -6,7 +6,9 @@ name: app-release
 # its app-v<version> tag exists, so the next run tries again.
 #
 # The APK is always attached as life-app.apk, because the app's "Update
-# required" screen links to releases/latest/download/life-app.apk.
+# required" screen links to releases/latest/download/life-app.apk. It is
+# attached with latest.json ({version, versionCode}), which the app fetches from
+# releases/latest/download/latest.json to find out whether a newer one exists.
 
 on:
   push:
@@ -105,11 +107,15 @@ jobs:
           echo "Signed with the release key ($actual)"
         env:
           EXPECTED_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      # Both files go in one command: gh uploads them to a draft and publishes it
+      # (creating the tag) only when all are there, so latest.json never appears
+      # without the APK, or before the signing check above has passed.
       - name: Publish the release
         run: |
           version=$(jq -r '.version' app/version.json)
           cp "$APK" life-app.apk
-          gh release create "app-v$version" life-app.apk \
+          jq '{version, versionCode}' app/version.json > latest.json
+          gh release create "app-v$version" life-app.apk latest.json \
             --target "$GITHUB_SHA" \
             --title "Life App $version" \
             --generate-notes
