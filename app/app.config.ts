@@ -61,6 +61,10 @@ const config: ExpoConfig = {
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    // Lets the app open Android's installer for the APK it downloads. It's not
+    // a prompt: the user turns "Install unknown apps" on for this app in
+    // Settings, which the installer offers on the first update.
+    permissions: ["android.permission.REQUEST_INSTALL_PACKAGES"],
   },
   plugins: [
     "expo-router",
