@@ -7,6 +7,7 @@ import { Button, Icon, ProgressBar, Text, useTheme } from "react-native-paper";
 import {
   latestApkUrl,
   useApkInstall,
+  type ApkInstallState,
 } from "@/features/app-update/install-apk";
 import { useNewerRelease } from "@/features/app-update/latest-release";
 import { Screen } from "@/ui/screen";
@@ -36,7 +37,28 @@ export const InstallUpdateScreen = () => {
         </Text>
       )}
 
-      {state.status === "downloading" && (
+      <InstallStateView state={state} onInstall={() => void install()} />
+    </Screen>
+  );
+};
+
+type InstallStateViewProps = {
+  state: ApkInstallState;
+  onInstall: () => void;
+};
+
+const InstallStateView = ({ state, onInstall }: InstallStateViewProps) => {
+  const { t } = useTranslation();
+
+  switch (state.status) {
+    case "idle":
+      return (
+        <Button mode="contained" onPress={onInstall}>
+          {t("appUpdate.install")}
+        </Button>
+      );
+    case "downloading":
+      return (
         <View style={styles.progress}>
           <ProgressBar
             indeterminate={state.progress === null}
@@ -50,29 +72,22 @@ export const InstallUpdateScreen = () => {
                 })}
           </Text>
         </View>
-      )}
-
-      {state.status === "idle" && (
-        <Button mode="contained" onPress={() => void install()}>
-          {t("appUpdate.install")}
-        </Button>
-      )}
-
-      {state.status === "failed" && (
+      );
+    case "failed":
+      return (
         <>
           <Text variant="bodyLarge" style={styles.text}>
             {t("appUpdate.downloadFailed")}
           </Text>
-          <Button mode="contained" onPress={() => void install()}>
+          <Button mode="contained" onPress={onInstall}>
             {t("common.retry")}
           </Button>
           <Button onPress={() => void Linking.openURL(latestApkUrl)}>
             {t("appUpdate.downloadFromGithub")}
           </Button>
         </>
-      )}
-    </Screen>
-  );
+      );
+  }
 };
 
 const styles = StyleSheet.create({
