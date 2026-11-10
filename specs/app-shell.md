@@ -16,7 +16,7 @@ Features share one frame: how the app is navigated, where personal settings live
 - **Changes show immediately.** Edits appear as soon as they're made and are saved in the background. If saving fails after automatic retries, the change is undone and a snackbar says what failed, with **Retry**.
 - **Data stays fresh** by reloading when a screen opens or the app returns from the background. Lists can also be pulled down to refresh.
 - **App updates.** Every app change is a new APK, released on GitHub. At launch, and when the app returns to the foreground (not more than about once an hour), the app checks for a newer release.
-  - If there is one, Home shows a banner at the top: "A new version (X.Y.Z) is available", with **Later** and **Install**. It stays until acted on. **Later** hides it until the next launch.
+  - If there is one, Home shows a banner at the top: "A new version is available. Update now?", with **Later** and **Install**. A quieter second row gives the versions: "Current: X.Y.Z · New: X.Y.Z". It stays until acted on. **Later** hides it until the next launch.
   - **Install** downloads the APK, with the progress in the banner, and then opens Android's own installer. The app never installs on its own.
   - It's a banner, not a snackbar: a snackbar is feedback that goes away, while an available update stays true until it's installed.
   - The first install from the app needs a one-time system setting, "Allow installs from this app". The app sends the user to it when it's missing.
@@ -58,7 +58,7 @@ Every screen uses the same states:
 
 ## Open questions
 
-- **Profile and settings contents.** What the profile and settings screens hold, beyond editing the name (see [sign-in.md](sign-in.md)).
+- **Profile and settings contents.** What the profile and settings screens hold, beyond editing the name (see [sign-in.md](sign-in.md)). Settings should probably have a manual **Check for updates**: it checks at once, ignoring the hourly limit, shows an available update even after **Later** hid the banner, and says "You're up to date" or "Couldn't check" where the automatic check stays silent.
 - **Home without features.** What Home shows before any feature contributes a card.
 
 ## Implementation
