@@ -54,6 +54,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      # Caches Gradle's downloads (the Gradle distribution, Maven
+      # dependencies) between runs. The native compile output lives in the
+      # project, which prebuild --clean regenerates, so it isn't cached.
+      - uses: gradle/actions/setup-gradle@v6
       - name: Install dependencies
         working-directory: app
         run: npm ci
