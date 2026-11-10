@@ -41,7 +41,7 @@ The dev variant calls the API at `http://10.0.2.2:8080`, the emulator's address 
 
 ## Releasing
 
-A release is a GitHub release with the signed production APK attached as `life-app.apk`. The phones install it directly. [`releases/latest/download/life-app.apk`](https://github.com/lakaniemi/life-app/releases/latest/download/life-app.apk) always points at the newest one, and the "Update required" screen links there.
+A release is a GitHub release with the signed production APK attached as `life-app.apk`. The phones install it directly. [`releases/latest/download/life-app.apk`](https://github.com/lakaniemi/life-app/releases/latest/download/life-app.apk) always points at the newest one, and the "Update required" screen links there. The release also carries `latest.json`, a copy of `version.json` (`{ "version", "versionCode" }`) that the app fetches from [`releases/latest/download/latest.json`](https://github.com/lakaniemi/life-app/releases/latest/download/latest.json) to see whether a newer version exists.
 
 To release, open a PR that bumps both fields in `version.json`, and merge it:
 
@@ -52,7 +52,7 @@ To release, open a PR that bumps both fields in `version.json`, and merge it:
 - `version` is the label people see, as `X.Y.Z`. It must be higher than the last release's.
 - `versionCode` is the integer Android compares, and it refuses to install a lower one over a higher one. It must go up by at least one with every release.
 
-The app's CI fails the PR when the bump is inconsistent. After the merge, the `app-release` workflow builds the APK, checks that it's signed with the release key, and publishes the `app-v<version>` release with notes listing the merged PRs. A merge that doesn't change `version.json` releases nothing. If a run fails, fix the cause and re-run the workflow from the Actions tab: a release only exists once its tag does.
+The app's CI fails the PR when the bump is inconsistent. After the merge, the `app-release` workflow builds the APK, checks that it's signed with the release key, and publishes the `app-v<version>` release with notes listing the merged PRs, uploading `life-app.apk` and `latest.json` together: the release is published (and its tag created) only once both are there, so `latest.json` never announces an APK that isn't. A merge that doesn't change `version.json` releases nothing. If a run fails, fix the cause and re-run the workflow from the Actions tab: a release only exists once its tag does. A run that dies during the upload can leave an unpublished draft release behind, which is safe to delete by hand.
 
 ### Signing key (one-time setup)
 

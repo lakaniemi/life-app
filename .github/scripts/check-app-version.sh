@@ -19,6 +19,10 @@ cd "$(git rev-parse --show-toplevel)"
 version=$(jq -r '.version' app/version.json)
 code=$(jq -r '.versionCode' app/version.json)
 
+if ! jq -e '(.version | type == "string") and (.versionCode | type == "number")' app/version.json > /dev/null; then
+  echo "::error file=app/version.json::version must be a JSON string and versionCode a JSON number, because latest.json copies them as they are."
+  exit 1
+fi
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "::error file=app/version.json::version must look like 1.2.3, got '$version'."
   exit 1
