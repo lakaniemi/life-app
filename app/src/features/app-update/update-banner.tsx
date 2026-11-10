@@ -1,10 +1,12 @@
+import { nativeApplicationVersion } from "expo-application";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking } from "react-native";
-import { Banner } from "react-native-paper";
+import { Banner, Icon, Text, useTheme } from "react-native-paper";
 
 import { useNewerRelease } from "@/features/app-update/latest-release";
 import { latestApkUrl } from "@/features/app-update/update-required-screen";
+import type { AppPaperTheme } from "@/ui/theme";
 
 // Offers a newer release at the top of Home, and nothing when there isn't
 // one. It stays until acted on: unlike a snackbar, an available update stays
@@ -12,6 +14,7 @@ import { latestApkUrl } from "@/features/app-update/update-required-screen";
 // the banner is back at the next launch.
 export const UpdateBanner = () => {
   const { t } = useTranslation();
+  const { colors } = useTheme<AppPaperTheme>();
   const { data: release } = useNewerRelease();
   const [isDismissed, setDismissed] = useState(false);
 
@@ -22,7 +25,11 @@ export const UpdateBanner = () => {
   return (
     <Banner
       visible
-      icon="cellphone-arrow-down"
+      // A function, so the icon takes the theme's colour. Banner draws a plain
+      // string icon in a default colour.
+      icon={({ size }) => (
+        <Icon source="cellphone-arrow-down" size={size} color={colors.success} />
+      )}
       actions={[
         { label: t("appUpdate.later"), onPress: () => setDismissed(true) },
         {
@@ -33,7 +40,19 @@ export const UpdateBanner = () => {
         },
       ]}
     >
-      {t("appUpdate.available", { version: release.version })}
+      {t("appUpdate.available")}
+      {"\n"}
+      {/* The versions are detail for the curious, so quieter than the
+          question. The taller line gives them room below it. */}
+      <Text
+        variant="bodySmall"
+        style={{ color: colors.onSurfaceVariant, lineHeight: 24 }}
+      >
+        {t("appUpdate.versions", {
+          current: nativeApplicationVersion ?? "?",
+          latest: release.version,
+        })}
+      </Text>
     </Banner>
   );
 };

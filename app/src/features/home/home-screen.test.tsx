@@ -8,7 +8,10 @@ import { HomeScreen } from "@/features/home/home-screen";
 
 jest.mock("@/api/client");
 // The running build's versionCode is 5.
-jest.mock("expo-application", () => ({ nativeBuildVersion: "5" }));
+jest.mock("expo-application", () => ({
+  nativeApplicationVersion: "0.0.5",
+  nativeBuildVersion: "5",
+}));
 
 const apiFetchMock = jest.mocked(apiFetch);
 const fetchMock = jest.fn();
@@ -40,7 +43,7 @@ test("shows the update banner above whatever state Home is in", async () => {
   await renderWithQueryClient(<HomeScreen />);
 
   expect(
-    await screen.findByText("A new version (0.0.6) is available"),
+    await screen.findByText(/A new version is available/),
   ).toBeOnTheScreen();
   expect(screen.getByLabelText("Loading")).toBeOnTheScreen();
 });

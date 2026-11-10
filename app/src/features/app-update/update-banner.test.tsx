@@ -11,8 +11,11 @@ import { renderWithQueryClient } from "@/api/test-utils";
 import { UpdateBanner } from "@/features/app-update/update-banner";
 import { latestApkUrl } from "@/features/app-update/update-required-screen";
 
-// The running build's versionCode is 5.
-jest.mock("expo-application", () => ({ nativeBuildVersion: "5" }));
+// The running build is 0.0.5, with versionCode 5.
+jest.mock("expo-application", () => ({
+  nativeApplicationVersion: "0.0.5",
+  nativeBuildVersion: "5",
+}));
 
 const fetchMock = jest.fn();
 
@@ -35,16 +38,19 @@ const respondWith = (body: string, status = 200) =>
 const respondWithRelease = (versionCode: number) =>
   respondWith(JSON.stringify({ version: `0.0.${versionCode}`, versionCode }));
 
-const banner = () => screen.queryByText(/A new version/);
+const banner = () => screen.queryByText(/A new version is available/);
+const findBanner = () => screen.findByText(/A new version is available/);
 
-test("offers a newer release", async () => {
+test("offers a newer release, with the versions on a row of their own", async () => {
   respondWithRelease(6);
 
   await renderWithQueryClient(<UpdateBanner />);
 
-  expect(
-    await screen.findByText("A new version (0.0.6) is available"),
-  ).toBeOnTheScreen();
+  expect(await findBanner()).toHaveTextContent(
+    "A new version is available. Update now?\n" +
+      "Current: 0.0.5 · New: 0.0.6",
+  );
+  expect(screen.getByText("Current: 0.0.5 · New: 0.0.6")).toBeOnTheScreen();
 });
 
 test.each([
@@ -105,7 +111,7 @@ test("doesn't check in a build without a release URL", async () => {
 test("Later hides the banner", async () => {
   respondWithRelease(6);
   await renderWithQueryClient(<UpdateBanner />);
-  await screen.findByText("A new version (0.0.6) is available");
+  await findBanner();
 
   await fireEvent.press(screen.getByRole("button", { name: "Later" }));
 
@@ -116,7 +122,7 @@ test("Install opens the APK link", async () => {
   const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue();
   respondWithRelease(6);
   await renderWithQueryClient(<UpdateBanner />);
-  await screen.findByText("A new version (0.0.6) is available");
+  await findBanner();
 
   await fireEvent.press(screen.getByRole("button", { name: "Install" }));
 
@@ -133,7 +139,7 @@ describe("the throttle", () => {
   test("checks again on returning to the foreground only after an hour", async () => {
     respondWithRelease(6);
     await renderWithQueryClient(<UpdateBanner />);
-    await screen.findByText("A new version (0.0.6) is available");
+    await findBanner();
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const now = Date.now();

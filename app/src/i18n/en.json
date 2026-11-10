@@ -1,6 +1,7 @@
 {
   "appUpdate": {
-    "available": "A new version ({{version}}) is available",
+    "available": "A new version is available. Update now?",
+    "versions": "Current: {{current}} · New: {{latest}}",
     "later": "Later",
     "install": "Install"
   },
