@@ -95,9 +95,11 @@ jobs:
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
           certs=$("$apksigner" verify --print-certs "$APK")
           echo "$certs"
-          # The signer label varies ("Signer #1", "Signer (minSdkVersion=…)"),
-          # so match any. More than one distinct digest fails the comparison.
-          actual=$(echo "$certs" | sed -n 's/^Signer.* certificate SHA-256 digest: //p' | sort -u)
+          # The signer label varies ("Signer #1", "Signer (minSdkVersion=…)",
+          # "V2 Signer"), so match any. V2 and V3 lines repeat the same digest,
+          # which sort -u collapses. More than one distinct digest fails the
+          # comparison.
+          actual=$(echo "$certs" | sed -n 's/^.*Signer.* certificate SHA-256 digest: //p' | sort -u)
           # keytool prints AA:BB:…, apksigner prints aabb…
           expected=$(echo "$EXPECTED_CERT_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           if [[ -z "$expected" || "$actual" != "$expected" ]]; then
