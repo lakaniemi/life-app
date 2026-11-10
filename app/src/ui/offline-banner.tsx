@@ -19,7 +19,15 @@ export const OfflineBanner = () => {
   const online = useSyncExternalStore(subscribeToOnline, isOnline);
   const hasCachedData = useSyncExternalStore(
     (onChange) => queryCache.subscribe(onChange),
-    () => queryCache.findAll().some((query) => query.state.data !== undefined),
+    // Queries with `meta: { persist: false }` (the update check) don't count:
+    // they hold no data that a screen shows.
+    () =>
+      queryCache
+        .findAll()
+        .some(
+          (query) =>
+            query.meta?.persist !== false && query.state.data !== undefined,
+        ),
   );
 
   if (online || !hasCachedData) {
