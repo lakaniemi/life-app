@@ -61,13 +61,14 @@ export const useApkInstall = () => {
   const [state, setState] = useState<ApkInstallState>({ status: "idle" });
   const running = useRef<AbortController | null>(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Nothing to set up on mount: the download starts from install(). The
+    // returned cleanup runs on unmount.
+    return () => {
       running.current?.abort();
       running.current = null;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const install = useCallback(async () => {
     if (running.current) {
