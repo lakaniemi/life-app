@@ -35,7 +35,6 @@
   },
   "updateRequired": {
     "title": "Update required",
-    "body": "This version of Life App is too old. Install the latest version to continue.",
-    "download": "Download update"
+    "body": "This version of Life App is too old. Install the latest version to continue."
   }
 }
