@@ -1,10 +1,11 @@
 import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 
 import { errorMessage } from "@/api/error-message";
 import { isWaitingForConnection } from "@/api/query-state";
+import { UpdateBanner } from "@/features/app-update/update-banner";
 import { useHealth, type Health } from "@/features/home/api";
 import { ErrorState } from "@/ui/error-state";
 import { LoadingState } from "@/ui/loading-state";
@@ -16,52 +17,52 @@ const statusKeys: Record<Health["status"], ParseKeys> = {
   unknown: "home.apiStatus.unknown",
 };
 
+// The banner is outside the states below, so it shows whatever the health
+// query is doing, and keeps its "Later" while they change.
+export const HomeScreen = () => (
+  <Screen>
+    <UpdateBanner />
+    <HealthStatus />
+  </Screen>
+);
+
 // Until features contribute their cards, Home shows the API's health, which
 // exercises the whole data layer.
-export const HomeScreen = () => {
+const HealthStatus = () => {
   const { t } = useTranslation();
   const health = useHealth();
 
   if (isWaitingForConnection(health)) {
-    return (
-      <Screen>
-        <ErrorState message={t("errors.offline")} />
-      </Screen>
-    );
+    return <ErrorState message={t("errors.offline")} />;
   }
 
   if (health.isPending) {
-    return (
-      <Screen>
-        <LoadingState />
-      </Screen>
-    );
+    return <LoadingState />;
   }
 
   if (health.isLoadingError) {
     return (
-      <Screen>
-        <ErrorState
-          message={errorMessage(health.error)}
-          onRetry={() => void health.refetch()}
-        />
-      </Screen>
+      <ErrorState
+        message={errorMessage(health.error)}
+        onRetry={() => void health.refetch()}
+      />
     );
   }
 
   return (
-    <Screen style={styles.container}>
+    <View style={styles.status}>
       <Text variant="headlineMedium">{t("home.title")}</Text>
       <Text variant="bodyLarge">{t(statusKeys[health.data.status])}</Text>
       <Text variant="bodySmall">
         {t("home.apiVersion", { version: health.data.version.slice(0, 7) })}
       </Text>
-    </Screen>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  status: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
