@@ -1,6 +1,6 @@
 # App shell
 
-Status: in progress: baseline built, app updates not
+Status: in progress: baseline and app updates built, the avatar menu not (it comes with sign-in)
 
 ## Why
 
@@ -67,9 +67,9 @@ Every screen uses the same states:
 
 - Technical design: [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md).
 - API: the minimum compatibility level is enforced by `api/internal/server/compat.go`.
-- App: most of this is built (the App baseline slice), and app updates are left for the App updates slice.
+- App: most of this is built (the App baseline and App updates slices). The top app bar with the avatar menu waits for sign-in.
   - Releases: `.github/workflows/app-release.yml` publishes the signed APK as `life-app.apk` on a GitHub release whenever `app/version.json` is bumped on `main`, together with `latest.json` (`version` and `versionCode`), which the app reads to find a newer release. `.github/scripts/check-app-version.sh` checks the bump on pull requests. The signing is `app/plugins/with-release-signing.ts`, and how to release is in [`app/README.md`](../app/README.md#releasing).
   - The shared screen states are in `app/src/ui/` (`loading-state.tsx`, `empty-state.tsx`, `error-state.tsx`), and the snackbar host is `app/src/ui/snackbar.tsx` (#23).
-  - The compatibility level, the header and the "outdated" flag are in `app/src/api/compat.ts` and `client.ts`. The "Update required" screen and the gate that shows it are in `app/src/features/app-update/`. It links to the APK only, until the App updates slice adds Install.
+  - The compatibility level, the header and the "outdated" flag are in `app/src/api/compat.ts` and `client.ts`. The gate that shows "Update required" (`update-gate.tsx`) renders the same Install update screen as the banner, in its `required` mode: it waits for **Install** instead of downloading at once.
   - The check for a newer release and the Home banner are in `app/src/features/app-update/` (`latest-release.ts`, `update-banner.tsx`). **Install** opens the `update` route, whose screen (`install-update-screen.tsx`) downloads and installs the APK through `install-apk.ts`.
   - The API client, error copy and query setup are in `app/src/api/`: the persisted cache and "Couldn't refresh" in `query-client.ts` and `query-provider.tsx`, refetching on focus and reconnect in `managers.ts` and `use-api-query.ts`, and the offline first load in `query-state.ts`. The offline banner is `app/src/ui/offline-banner.tsx`, shown by `Screen` (#24).

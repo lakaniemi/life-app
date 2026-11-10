@@ -1,8 +1,9 @@
 import { nativeApplicationVersion } from "expo-application";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, StyleSheet, View } from "react-native";
 import { Button, Icon, ProgressBar, Text, useTheme } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { latestApkUrl } from "@/api/config";
 import {
@@ -12,22 +13,44 @@ import {
 import { useNewerRelease } from "@/features/app-update/latest-release";
 import { Screen } from "@/ui/screen";
 
-// Downloads the latest release and opens Android's installer. The download
-// starts as soon as the screen opens, because the user got here by pressing
-// Install.
-export const InstallUpdateScreen = () => {
+type InstallUpdateScreenProps = {
+  // The API has turned this version away, and this screen replaces the whole
+  // app (UpdateGate). Otherwise the user got here from the Home banner.
+  required?: boolean;
+};
+
+// Downloads the latest release and opens Android's installer. Coming from the
+// banner, the download starts as soon as the screen opens, because the user
+// got here by pressing Install. When an update is required, it waits for
+// Install instead, so nothing is downloaded, perhaps over mobile data, before
+// the user has asked.
+export const InstallUpdateScreen = ({
+  required = false,
+}: InstallUpdateScreenProps) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { data: release } = useNewerRelease();
   const { state, install } = useApkInstall();
 
   useEffect(() => {
-    void install();
-  }, [install]);
+    if (!required) {
+      void install();
+    }
+  }, [required, install]);
 
-  return (
-    <Screen style={styles.content}>
+  const content = (
+    <>
       <Icon source="cellphone-arrow-down" size={48} color={colors.primary} />
+      {required && (
+        <>
+          <Text variant="headlineSmall" style={styles.text}>
+            {t("updateRequired.title")}
+          </Text>
+          <Text variant="bodyLarge" style={styles.text}>
+            {t("updateRequired.body")}
+          </Text>
+        </>
+      )}
       {release && (
         <Text variant="bodyMedium" style={styles.text}>
           {t("appUpdate.versions", {
@@ -38,7 +61,37 @@ export const InstallUpdateScreen = () => {
       )}
 
       <InstallStateView state={state} onInstall={() => void install()} />
-    </Screen>
+    </>
+  );
+
+  return required ? (
+    <FullScreen>{content}</FullScreen>
+  ) : (
+    <Screen style={styles.content}>{content}</Screen>
+  );
+};
+
+// What replaces the app when an update is required. It's rendered outside any
+// navigator, so there's no native header or offline banner, and the insets
+// on both sides are its own to handle.
+const FullScreen = ({ children }: { children: ReactNode }) => {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View
+      style={[
+        styles.content,
+        styles.fullScreen,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+    >
+      {children}
+    </View>
   );
 };
 
@@ -96,6 +149,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 16,
     padding: 24,
+  },
+  fullScreen: {
+    flex: 1,
   },
   progress: {
     alignSelf: "stretch",

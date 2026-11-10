@@ -48,6 +48,53 @@ test("starts the download when it opens", async () => {
   expect(install).toHaveBeenCalledTimes(1);
 });
 
+describe("when the update is required", () => {
+  test("explains that the app is too old", async () => {
+    withState({ status: "idle" });
+
+    await renderWithQueryClient(<InstallUpdateScreen required />);
+
+    expect(screen.getByText("Update required")).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        "This version of Life App is too old. Install the latest version to continue.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test("waits for Install instead of downloading at once", async () => {
+    withState({ status: "idle" });
+    await renderWithQueryClient(<InstallUpdateScreen required />);
+    expect(install).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Install" }));
+
+    expect(install).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows the progress", async () => {
+    withState({ status: "downloading", progress: 0.5 });
+
+    await renderWithQueryClient(<InstallUpdateScreen required />);
+
+    expect(screen.getByText("Downloading the update… 50%")).toBeOnTheScreen();
+  });
+
+  test("falls back to the APK on GitHub when the download fails", async () => {
+    const openURL = jest
+      .spyOn(Linking, "openURL")
+      .mockResolvedValue(undefined);
+    withState({ status: "failed" });
+    await renderWithQueryClient(<InstallUpdateScreen required />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Download from GitHub" }),
+    );
+
+    expect(openURL).toHaveBeenCalledWith(latestApkUrl);
+  });
+});
+
 test("shows the versions", async () => {
   withState({ status: "downloading", progress: null });
 
