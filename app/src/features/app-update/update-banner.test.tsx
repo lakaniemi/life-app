@@ -98,7 +98,7 @@ test("doesn't check in a build without a release URL", async () => {
   jest.replaceProperty(
     jest.requireMock("@/api/config"),
     "latestReleaseUrl",
-    null,
+    undefined,
   );
   respondWithRelease(6);
 

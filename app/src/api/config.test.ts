@@ -21,9 +21,9 @@ describe("latestReleaseUrl", () => {
 
   // The development variant's config leaves it out. Expo's config resolver
   // would turn a null into {}, which crashed the app at launch.
-  test("is null when the config leaves it out", () => {
+  test("is undefined when the config leaves it out", () => {
     const config = loadConfigWith({ apiUrl: "http://10.0.2.2:8080" });
 
-    expect(config.latestReleaseUrl).toBeNull();
+    expect(config.latestReleaseUrl).toBeUndefined();
   });
 });

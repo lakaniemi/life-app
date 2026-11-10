@@ -12,9 +12,9 @@ export const apiUrl = urlSchema
   .transform((url) => url.replace(/\/+$/, ""))
   .parse(Constants.expoConfig?.extra?.apiUrl);
 
-// Where to find the latest release's `latest.json`, or null when this build
-// doesn't check for updates (the development variant, whose config leaves it
-// out).
-export const latestReleaseUrl =
-  urlSchema.optional().parse(Constants.expoConfig?.extra?.latestReleaseUrl) ??
-  null;
+// Where to find the latest release's `latest.json`, or undefined when this
+// build doesn't check for updates (the development variant, whose config
+// leaves it out).
+export const latestReleaseUrl = urlSchema
+  .optional()
+  .parse(Constants.expoConfig?.extra?.latestReleaseUrl);

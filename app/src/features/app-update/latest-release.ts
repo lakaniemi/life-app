@@ -71,7 +71,7 @@ export const useNewerRelease = () =>
   useApiQuery({
     queryKey: appUpdateKeys.latestRelease(),
     queryFn: () => fetchLatestRelease(latestReleaseUrl!),
-    enabled: latestReleaseUrl !== null,
+    enabled: latestReleaseUrl !== undefined,
     staleTime: checkIntervalMs,
     // What is newer depends on the running build, and an old answer would
     // show a banner offline at launch, where Install can't work.
