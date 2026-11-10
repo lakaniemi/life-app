@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Linking, StyleSheet, View } from "react-native";
 import { Button, Icon, ProgressBar, Text, useTheme } from "react-native-paper";
 
+import { latestApkUrl } from "@/api/config";
 import {
-  latestApkUrl,
   useApkInstall,
   type ApkInstallState,
 } from "@/features/app-update/install-apk";

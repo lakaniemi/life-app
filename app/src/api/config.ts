@@ -12,6 +12,12 @@ export const apiUrl = urlSchema
   .transform((url) => url.replace(/\/+$/, ""))
   .parse(Constants.expoConfig?.extra?.apiUrl);
 
+// The latest release's APK, which the release workflow publishes under a fixed
+// name (docs/ARCHITECTURE.md, "Distribution").
+export const latestApkUrl = urlSchema.parse(
+  Constants.expoConfig?.extra?.latestApkUrl,
+);
+
 // Where to find the latest release's `latest.json`, or undefined when this
 // build doesn't check for updates (the development variant, whose config
 // leaves it out).

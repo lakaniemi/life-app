@@ -20,5 +20,6 @@ jest.mock("expo-router", () => ({
 // don't load. No test reaches the network: they mock fetch or the client.
 jest.mock("@/api/config", () => ({
   apiUrl: "https://api.test",
+  latestApkUrl: "https://releases.test/life-app.apk",
   latestReleaseUrl: "https://releases.test/latest.json",
 }));

@@ -22,6 +22,11 @@ const variants = {
   },
 } as const;
 
+// The release workflow publishes the signed APK and latest.json under fixed
+// names, so "latest/download" always points at the newest release.
+const latestReleaseDownloads =
+  "https://github.com/lakaniemi/life-app/releases/latest/download";
+
 type Variant = keyof typeof variants;
 
 const selectedVariant = (): Variant => {
@@ -93,8 +98,11 @@ const config: ExpoConfig = {
     // than null: Expo's config resolver turns a null into {}.
     latestReleaseUrl:
       variantName === "production"
-        ? "https://github.com/lakaniemi/life-app/releases/latest/download/latest.json"
+        ? `${latestReleaseDownloads}/latest.json`
         : process.env.LATEST_RELEASE_URL || undefined,
+    // The APK to download and install, and the fallback link when that fails.
+    // The same in every variant, so a development build can try the installer.
+    latestApkUrl: `${latestReleaseDownloads}/life-app.apk`,
   },
   experiments: {
     typedRoutes: true,

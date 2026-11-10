@@ -2,10 +2,7 @@ import { File, Paths } from "expo-file-system";
 import { startActivityAsync } from "expo-intent-launcher";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// The release workflow attaches the APK under this fixed name, so the URL
-// always points to the newest one (docs/ARCHITECTURE.md, "Distribution").
-export const latestApkUrl =
-  "https://github.com/lakaniemi/life-app/releases/latest/download/life-app.apk";
+import { latestApkUrl } from "@/api/config";
 
 const apkMimeType = "application/vnd.android.package-archive";
 

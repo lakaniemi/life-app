@@ -1,9 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react-native";
 import { Linking } from "react-native";
 
+import { latestApkUrl } from "@/api/config";
 import { renderWithQueryClient } from "@/api/test-utils";
 import {
-  latestApkUrl,
   useApkInstall,
   type ApkInstallState,
 } from "@/features/app-update/install-apk";

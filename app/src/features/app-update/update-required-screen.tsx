@@ -3,7 +3,7 @@ import { Linking, StyleSheet, View } from "react-native";
 import { Button, Icon, Text, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { latestApkUrl } from "@/features/app-update/install-apk";
+import { latestApkUrl } from "@/api/config";
 
 // Blocks the whole app when the API has turned it away as too old. The only
 // fix is a new APK.

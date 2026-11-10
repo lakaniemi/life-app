@@ -9,10 +9,27 @@ const loadConfigWith = (extra: Record<string, unknown>) => {
   return jest.requireActual<typeof import("@/api/config")>("@/api/config");
 };
 
+const required = {
+  apiUrl: "http://10.0.2.2:8080",
+  latestApkUrl: "https://releases.test/life-app.apk",
+};
+
+describe("latestApkUrl", () => {
+  test("is the configured URL", () => {
+    const config = loadConfigWith(required);
+
+    expect(config.latestApkUrl).toBe("https://releases.test/life-app.apk");
+  });
+
+  test("fails at load when the config leaves it out", () => {
+    expect(() => loadConfigWith({ apiUrl: required.apiUrl })).toThrow();
+  });
+});
+
 describe("latestReleaseUrl", () => {
   test("is the configured URL", () => {
     const config = loadConfigWith({
-      apiUrl: "http://10.0.2.2:8080",
+      ...required,
       latestReleaseUrl: "http://10.0.2.2:8000/latest.json",
     });
 
@@ -22,7 +39,7 @@ describe("latestReleaseUrl", () => {
   // The development variant's config leaves it out. Expo's config resolver
   // would turn a null into {}, which crashed the app at launch.
   test("is undefined when the config leaves it out", () => {
-    const config = loadConfigWith({ apiUrl: "http://10.0.2.2:8080" });
+    const config = loadConfigWith(required);
 
     expect(config.latestReleaseUrl).toBeUndefined();
   });
