@@ -47,6 +47,11 @@ jobs:
       contents: write
     env:
       APK: app/android/app/build/outputs/apk/release/app-release.apk
+      # On the job, not on prebuild alone: the Gradle build evaluates
+      # app.config.ts again, for the JS bundle and the config embedded in the
+      # APK, and without APP_VARIANT it gets the development variant's.
+      APP_VARIANT: production
+      EXPO_NO_GIT_STATUS: 1
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -75,8 +80,6 @@ jobs:
         working-directory: app
         run: npx expo prebuild --platform android --clean
         env:
-          APP_VARIANT: production
-          EXPO_NO_GIT_STATUS: 1
           CI: 1
       # Both phones are 64-bit ARM. Leaving out armeabi-v7a, x86 and x86_64
       # cuts the native compile, the longest part of the build, to a quarter.
@@ -109,6 +112,17 @@ jobs:
           echo "Signed with the release key ($actual)"
         env:
           EXPECTED_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      # The native side and the embedded config come from separate evaluations
+      # of app.config.ts, so a production package can still carry the
+      # development config (and its API URL). The package is a stand-in for
+      # the whole variant, since every value comes from the same evaluation.
+      - name: Check the APK embeds the production config
+        run: |
+          package=$(unzip -p "$APK" assets/app.config | jq -r '.android.package')
+          if [[ "$package" != "com.lakaniemi.lifeapp" ]]; then
+            echo "::error::The APK embeds the config for '$package', expected com.lakaniemi.lifeapp."
+            exit 1
+          fi
       # Both files go in one command: gh uploads them to a draft and publishes it
       # (creating the tag) only when all are there, so latest.json never appears
       # without the APK, or before the signing check above has passed.
