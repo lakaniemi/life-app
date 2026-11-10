@@ -26,6 +26,19 @@ A physical phone works too, over USB with debugging on. The dev build loads Java
 
 The dev variant calls the API at `http://10.0.2.2:8080`, the emulator's address for the Mac's `localhost`, so run the API locally (`api/README.md`). A physical phone can't use that address. Either run `adb reverse tcp:8080 tcp:8080` and start Metro with `API_URL=http://localhost:8080 npm start`, or set `API_URL` to the Mac's LAN address. Only the dev variant honors `API_URL`; production always uses its own URL. The URL comes from Metro's config, so changing it only needs a Metro restart, not a rebuild.
 
+### Trying the update banner
+
+Only the production variant checks for a newer release. To see the banner in a dev build, serve a `latest.json` and point the build at it. `versionCode` must be higher than the one in `version.json`:
+
+```bash
+mkdir -p .claude/tmp/release
+echo '{ "version": "9.9.9", "versionCode": 99 }' > .claude/tmp/release/latest.json
+python3 -m http.server 8000 --directory .claude/tmp/release
+LATEST_RELEASE_URL=http://10.0.2.2:8000/latest.json npm start   # in another terminal
+```
+
+"Later" hides the banner until the app is killed and reopened, and a check runs at most once an hour, so relaunch the app to check again.
+
 ## Variants
 
 `APP_VARIANT` selects the variant in `app.config.ts`. Both install side by side:
