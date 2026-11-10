@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { Icon, Text, useTheme } from "react-native-paper";
 
+import { shouldPersistQuery } from "@/api/query-client";
+
 const subscribeToOnline = (onChange: () => void) =>
   onlineManager.subscribe(onChange);
 const isOnline = () => onlineManager.isOnline();
@@ -19,15 +21,10 @@ export const OfflineBanner = () => {
   const online = useSyncExternalStore(subscribeToOnline, isOnline);
   const hasCachedData = useSyncExternalStore(
     (onChange) => queryCache.subscribe(onChange),
-    // Queries with `meta: { persist: false }` (the update check) don't count:
-    // they hold no data that a screen shows.
-    () =>
-      queryCache
-        .findAll()
-        .some(
-          (query) =>
-            query.meta?.persist !== false && query.state.data !== undefined,
-        ),
+    // What is persisted is what a cold start offline shows too, so the same
+    // check decides what counts as cached data. That leaves out the update
+    // check, which holds nothing a screen shows.
+    () => queryCache.findAll().some(shouldPersistQuery),
   );
 
   if (online || !hasCachedData) {
