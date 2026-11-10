@@ -80,9 +80,14 @@ jobs:
       # Without the keystore properties Gradle falls back to the debug key, which
       # still produces a valid APK. This is what stops one from being published.
       - name: Check the APK is signed with the release key
+        shell: bash
         run: |
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
-          actual=$("$apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          certs=$("$apksigner" verify --print-certs "$APK")
+          echo "$certs"
+          # The signer label varies ("Signer #1", "Signer (minSdkVersion=…)"),
+          # so match any. More than one distinct digest fails the comparison.
+          actual=$(echo "$certs" | sed -n 's/^Signer.* certificate SHA-256 digest: //p' | sort -u)
           # keytool prints AA:BB:…, apksigner prints aabb…
           expected=$(echo "$EXPECTED_CERT_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           if [[ -z "$expected" || "$actual" != "$expected" ]]; then
