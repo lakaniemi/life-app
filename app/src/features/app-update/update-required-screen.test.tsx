@@ -1,10 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { Linking } from "react-native";
 
-import {
-  latestApkUrl,
-  UpdateRequiredScreen,
-} from "@/features/app-update/update-required-screen";
+import { latestApkUrl } from "@/api/config";
+import { UpdateRequiredScreen } from "@/features/app-update/update-required-screen";
 
 test("explains that the app is too old", async () => {
   await render(<UpdateRequiredScreen />);

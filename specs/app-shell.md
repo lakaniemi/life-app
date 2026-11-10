@@ -17,9 +17,10 @@ Features share one frame: how the app is navigated, where personal settings live
 - **Data stays fresh** by reloading when a screen opens or the app returns from the background. Lists can also be pulled down to refresh.
 - **App updates.** Every app change is a new APK, released on GitHub. At launch, and when the app returns to the foreground (not more than about once an hour), the app checks for a newer release.
   - If there is one, Home shows a banner at the top: "A new version is available. Update now?", with **Later** and **Install**. A quieter second row gives the versions: "Current: X.Y.Z · New: X.Y.Z". It stays until acted on. **Later** hides it until the next launch.
-  - **Install** downloads the APK, with the progress in the banner, and then opens Android's own installer. The app never installs on its own.
+  - **Install** opens an **Install update** screen, which downloads the APK with a progress bar and then opens Android's own installer. The app never installs on its own. If the user comes back from the installer without installing, the screen offers **Install** again.
+  - If the download fails, the screen says so and offers **Retry** and a link to the APK on GitHub.
   - It's a banner, not a snackbar: a snackbar is feedback that goes away, while an available update stays true until it's installed.
-  - The first install from the app needs a one-time system setting, "Allow installs from this app". The app sends the user to it when it's missing.
+  - The first install from the app needs a one-time system setting, "Install unknown apps" for this app. Nothing asks for it at launch: Android's installer sends the user to it, on the first update only.
 - **Update required.** If the app is too old for the API, a blocking screen asks the user to update. It offers the same **Install**, with progress. If the download fails, the screen falls back to a link to the latest APK on GitHub.
 
 ## Rules
@@ -34,7 +35,8 @@ Features share one frame: how the app is navigated, where personal settings live
 - With no connection, previously loaded screens still show their data, and the offline banner is visible. It disappears when the connection returns.
 - A failing change is reverted and shows a snackbar with Retry, and Retry repeats the change.
 - Opening a screen, returning to the app, or pulling down a list shows fresh data.
-- When a newer release exists, Home shows the update banner. **Install** downloads it and opens Android's installer, and **Later** hides the banner until the next launch.
+- When a newer release exists, Home shows the update banner. **Install** opens a screen that downloads it, with progress, and opens Android's installer, and **Later** hides the banner until the next launch.
+- When the download fails, the Install update screen says so, and **Retry** or the GitHub link are offered.
 - With no newer release, or when the release check fails, nothing is shown.
 - When the API turns the app away as too old, nothing but the "Update required" screen is reachable. Its **Install**, or the download link when the download fails, leads to a version the API accepts.
 
@@ -69,5 +71,5 @@ Every screen uses the same states:
   - Releases: `.github/workflows/app-release.yml` publishes the signed APK as `life-app.apk` on a GitHub release whenever `app/version.json` is bumped on `main`, together with `latest.json` (`version` and `versionCode`), which the app reads to find a newer release. `.github/scripts/check-app-version.sh` checks the bump on pull requests. The signing is `app/plugins/with-release-signing.ts`, and how to release is in [`app/README.md`](../app/README.md#releasing).
   - The shared screen states are in `app/src/ui/` (`loading-state.tsx`, `empty-state.tsx`, `error-state.tsx`), and the snackbar host is `app/src/ui/snackbar.tsx` (#23).
   - The compatibility level, the header and the "outdated" flag are in `app/src/api/compat.ts` and `client.ts`. The "Update required" screen and the gate that shows it are in `app/src/features/app-update/`. It links to the APK only, until the App updates slice adds Install.
-  - The check for a newer release and the Home banner are in `app/src/features/app-update/` (`latest-release.ts`, `update-banner.tsx`). **Install** opens the APK link until the App updates slice adds the download and installer.
+  - The check for a newer release and the Home banner are in `app/src/features/app-update/` (`latest-release.ts`, `update-banner.tsx`). **Install** opens the `update` route, whose screen (`install-update-screen.tsx`) downloads and installs the APK through `install-apk.ts`.
   - The API client, error copy and query setup are in `app/src/api/`: the persisted cache and "Couldn't refresh" in `query-client.ts` and `query-provider.tsx`, refetching on focus and reconnect in `managers.ts` and `use-api-query.ts`, and the offline first load in `query-state.ts`. The offline banner is `app/src/ui/offline-banner.tsx`, shown by `Screen` (#24).

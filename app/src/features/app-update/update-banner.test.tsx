@@ -5,11 +5,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
-import { Linking } from "react-native";
+import { router } from "expo-router";
 
 import { renderWithQueryClient } from "@/api/test-utils";
 import { UpdateBanner } from "@/features/app-update/update-banner";
-import { latestApkUrl } from "@/features/app-update/update-required-screen";
 
 // The running build is 0.0.5, with versionCode 5.
 jest.mock("expo-application", () => ({
@@ -118,15 +117,15 @@ test("Later hides the banner", async () => {
   expect(banner()).not.toBeOnTheScreen();
 });
 
-test("Install opens the APK link", async () => {
-  const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue();
+test("Install opens the install screen", async () => {
+  const push = jest.spyOn(router, "push").mockImplementation(() => {});
   respondWithRelease(6);
   await renderWithQueryClient(<UpdateBanner />);
   await findBanner();
 
   await fireEvent.press(screen.getByRole("button", { name: "Install" }));
 
-  expect(openURL).toHaveBeenCalledWith(latestApkUrl);
+  expect(push).toHaveBeenCalledWith("/update");
 });
 
 describe("the throttle", () => {
