@@ -13,7 +13,8 @@ export const apiUrl = urlSchema
   .parse(Constants.expoConfig?.extra?.apiUrl);
 
 // Where to find the latest release's `latest.json`, or null when this build
-// doesn't check for updates (the development variant).
-export const latestReleaseUrl = urlSchema
-  .nullable()
-  .parse(Constants.expoConfig?.extra?.latestReleaseUrl ?? null);
+// doesn't check for updates (the development variant, whose config leaves it
+// out).
+export const latestReleaseUrl =
+  urlSchema.optional().parse(Constants.expoConfig?.extra?.latestReleaseUrl) ??
+  null;

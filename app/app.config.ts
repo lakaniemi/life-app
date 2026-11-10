@@ -83,13 +83,14 @@ const config: ExpoConfig = {
     apiUrl:
       (variantName === "development" && process.env.API_URL) || variant.apiUrl,
     // Where the app looks for a newer release. The development variant has no
-    // release to compare with, so it doesn't check, unless LATEST_RELEASE_URL
-    // points it at a file to try the banner with. Same restart-only rule as
-    // API_URL; production ignores it.
+    // release to compare with, so it leaves this out and doesn't check, unless
+    // LATEST_RELEASE_URL points it at a file to try the banner with. Same
+    // restart-only rule as API_URL; production ignores it. Left out rather
+    // than null: Expo's config resolver turns a null into {}.
     latestReleaseUrl:
       variantName === "production"
         ? "https://github.com/lakaniemi/life-app/releases/latest/download/latest.json"
-        : process.env.LATEST_RELEASE_URL || null,
+        : process.env.LATEST_RELEASE_URL || undefined,
   },
   experiments: {
     typedRoutes: true,
