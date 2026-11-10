@@ -18,8 +18,8 @@ connectQueryManagers();
 const persister = createAsyncStoragePersister({ storage: AsyncStorage });
 
 // A new app version starts with an empty cache instead of reading data cached
-// under older schemas. Until over-the-air updates exist, the version is the
-// APK's; with them, it becomes the running update's id.
+// under older schemas. Every change ships as a new APK, so the APK's version
+// identifies exactly what runs.
 const buster = `${nativeApplicationVersion}+${nativeBuildVersion}`;
 
 type QueryProviderProps = {

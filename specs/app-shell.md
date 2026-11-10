@@ -1,6 +1,6 @@
 # App shell
 
-Status: in progress: baseline built, over-the-air updates not
+Status: in progress: baseline built, app updates not
 
 ## Why
 
@@ -15,8 +15,12 @@ Features share one frame: how the app is navigated, where personal settings live
 - **The app needs a connection.** Without one, it still shows the last data it loaded, read-only, under an "Offline · showing cached data" banner.
 - **Changes show immediately.** Edits appear as soon as they're made and are saved in the background. If saving fails after automatic retries, the change is undone and a snackbar says what failed, with **Retry**.
 - **Data stays fresh** by reloading when a screen opens or the app returns from the background. Lists can also be pulled down to refresh.
-- **App updates** download in the background. When one is ready, a snackbar "Update ready · Restart" offers to restart into it. The app never restarts on its own. This comes with the Over-the-air updates slice; until then, a new version means installing a new APK.
-- **Update required.** If the app is too old for the API, a blocking screen asks the user to update. If an over-the-air update is available, the screen offers **Restart** to apply it. Otherwise the update needs a new app install, and the screen links to the latest APK on GitHub.
+- **App updates.** Every app change is a new APK, released on GitHub. At launch, and when the app returns to the foreground (not more than about once an hour), the app checks for a newer release.
+  - If there is one, Home shows a banner at the top: "A new version (X.Y.Z) is available", with **Later** and **Install**. It stays until acted on. **Later** hides it until the next launch.
+  - **Install** downloads the APK, with the progress in the banner, and then opens Android's own installer. The app never installs on its own.
+  - It's a banner, not a snackbar: a snackbar is feedback that goes away, while an available update stays true until it's installed.
+  - The first install from the app needs a one-time system setting, "Allow installs from this app". The app sends the user to it when it's missing.
+- **Update required.** If the app is too old for the API, a blocking screen asks the user to update. It offers the same **Install**, with progress. If the download fails, the screen falls back to a link to the latest APK on GitHub.
 
 ## Rules
 
@@ -30,8 +34,9 @@ Features share one frame: how the app is navigated, where personal settings live
 - With no connection, previously loaded screens still show their data, and the offline banner is visible. It disappears when the connection returns.
 - A failing change is reverted and shows a snackbar with Retry, and Retry repeats the change.
 - Opening a screen, returning to the app, or pulling down a list shows fresh data.
-- After an update has downloaded, the restart snackbar appears; tapping Restart starts the new version (Over-the-air updates slice).
-- When the API turns the app away as too old, nothing but the "Update required" screen is reachable. Its Restart (over-the-air) or download link (new APK) leads to a version the API accepts.
+- When a newer release exists, Home shows the update banner. **Install** downloads it and opens Android's installer, and **Later** hides the banner until the next launch.
+- With no newer release, or when the release check fails, nothing is shown.
+- When the API turns the app away as too old, nothing but the "Update required" screen is reachable. Its **Install**, or the download link when the download fails, leads to a version the API accepts.
 
 ## UI
 
@@ -60,8 +65,8 @@ Every screen uses the same states:
 
 - Technical design: [`app/docs/ARCHITECTURE.md`](../app/docs/ARCHITECTURE.md).
 - API: the minimum compatibility level is enforced by `api/internal/server/compat.go`.
-- App: most of this is built (the App baseline slice), and app updates are left for the Over-the-air updates slice.
+- App: most of this is built (the App baseline slice), and app updates are left for the App updates slice.
   - Releases: `.github/workflows/app-release.yml` publishes the signed APK as `life-app.apk` on a GitHub release whenever `app/version.json` is bumped on `main`. `.github/scripts/check-app-version.sh` checks the bump on pull requests. The signing is `app/plugins/with-release-signing.ts`, and how to release is in [`app/README.md`](../app/README.md#releasing).
   - The shared screen states are in `app/src/ui/` (`loading-state.tsx`, `empty-state.tsx`, `error-state.tsx`), and the snackbar host is `app/src/ui/snackbar.tsx` (#23).
-  - The compatibility level, the header and the "outdated" flag are in `app/src/api/compat.ts` and `client.ts`. The "Update required" screen and the gate that shows it are in `app/src/features/app-update/`. It links to the APK only, until the Over-the-air updates slice adds Restart.
+  - The compatibility level, the header and the "outdated" flag are in `app/src/api/compat.ts` and `client.ts`. The "Update required" screen and the gate that shows it are in `app/src/features/app-update/`. It links to the APK only, until the App updates slice adds Install.
   - The API client, error copy and query setup are in `app/src/api/`: the persisted cache and "Couldn't refresh" in `query-client.ts` and `query-provider.tsx`, refetching on focus and reconnect in `managers.ts` and `use-api-query.ts`, and the offline first load in `query-state.ts`. The offline banner is `app/src/ui/offline-banner.tsx`, shown by `Screen` (#24).
