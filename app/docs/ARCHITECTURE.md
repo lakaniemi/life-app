@@ -189,7 +189,7 @@ There is no URL or date-based versioning (`/v1`, Stripe-style version transforms
 - **The app sends it on every request** in an `App-Compat-Level` header. Custom headers have no `X-` prefix (RFC 6648).
 - **The API keeps its minimum as a constant in code**, so raising it ships atomically with the breaking change it protects. A middleware (`api/internal/server/compat.go`) answers requests below the minimum with 400 and the error code `app_outdated`, and a header that isn't an integer with 400 `invalid_compat_level`. Requests without the header (curl, tests) aren't gated: only the app sends it, and every build does. The API logs the level, which shows which levels are still in use before an old endpoint is removed.
 - **The app handles `app_outdated` from its first build**, because an old app can only react to the code if the handling was already in it. It shows the blocking "Update required" screen ([app-shell.md](../../specs/app-shell.md)):
-  1. The fix is always a new APK. The screen offers **Install**, which downloads the latest release and opens Android's installer ([Build and release](#9-build-and-release)). This comes with the App updates slice; until then, the screen only links to the APK.
+  1. The fix is always a new APK. The screen is the Install update screen in its `required` mode ([Build and release](#9-build-and-release)): **Install** downloads the latest release and opens Android's installer. Unlike when it's opened from the banner, it doesn't start the download by itself.
   2. If the download fails, the screen falls back to a link to the latest GitHub release.
 
 ### Device cache
