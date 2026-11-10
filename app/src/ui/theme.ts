@@ -7,7 +7,22 @@ import { MD3DarkTheme, MD3LightTheme, type MD3Theme } from "react-native-paper";
 // Builder. They're static on purpose: the app keeps its own scheme rather than
 // Android's dynamic color. The elevation levels are surface tinted with primary
 // at Paper's opacities, as opaque colors so that Surface shadows render.
-const lightColors: MD3Theme["colors"] = {
+//
+// Material 3 has no green role, so "success" is an extended color in Material
+// Theme Builder's sense: the green #2E8B3E harmonized toward the seed, with
+// tones 40/100/90/10 in light and 80/20/30/90 in dark. It's for what is
+// positive or on offer, such as an available update.
+type AppColors = MD3Theme["colors"] & {
+  success: string;
+  onSuccess: string;
+  successContainer: string;
+  onSuccessContainer: string;
+};
+
+// Use with Paper's useTheme<AppPaperTheme>() to read the extended colors.
+export type AppPaperTheme = MD3Theme & { colors: AppColors };
+
+const lightColors: AppColors = {
   primary: "#36618E",
   primaryContainer: "#D1E4FF",
   secondary: "#535F70",
@@ -26,6 +41,10 @@ const lightColors: MD3Theme["colors"] = {
   onSecondaryContainer: "#3B4858",
   onTertiary: "#FFFFFF",
   onTertiaryContainer: "#523F5F",
+  success: "#006C46",
+  onSuccess: "#FFFFFF",
+  successContainer: "#8AF8BF",
+  onSuccessContainer: "#002112",
   onSurface: "#191C20",
   onSurfaceVariant: "#43474E",
   onSurfaceDisabled: "rgba(25, 28, 32, 0.38)",
@@ -50,7 +69,7 @@ const lightColors: MD3Theme["colors"] = {
   },
 };
 
-const darkColors: MD3Theme["colors"] = {
+const darkColors: AppColors = {
   primary: "#A0CAFD",
   primaryContainer: "#194975",
   secondary: "#BBC7DB",
@@ -69,6 +88,10 @@ const darkColors: MD3Theme["colors"] = {
   onSecondaryContainer: "#D7E3F7",
   onTertiary: "#3B2948",
   onTertiaryContainer: "#F2DAFF",
+  success: "#6DDBA4",
+  onSuccess: "#003822",
+  successContainer: "#005234",
+  onSuccessContainer: "#8AF8BF",
   onSurface: "#E1E2E8",
   onSurfaceVariant: "#C3C7CF",
   onSurfaceDisabled: "rgba(225, 226, 232, 0.38)",
@@ -93,8 +116,14 @@ const darkColors: MD3Theme["colors"] = {
   },
 };
 
-export const lightTheme: MD3Theme = { ...MD3LightTheme, colors: lightColors };
-export const darkTheme: MD3Theme = { ...MD3DarkTheme, colors: darkColors };
+export const lightTheme: AppPaperTheme = {
+  ...MD3LightTheme,
+  colors: lightColors,
+};
+export const darkTheme: AppPaperTheme = {
+  ...MD3DarkTheme,
+  colors: darkColors,
+};
 
 // The native stack's header and screen background are drawn by native code,
 // themed through Expo Router's ThemeProvider rather than Paper's, so they get
@@ -117,7 +146,7 @@ const navigationTheme = (base: Theme, { colors }: MD3Theme): Theme => {
 const lightNavigationTheme = navigationTheme(DefaultTheme, lightTheme);
 const darkNavigationTheme = navigationTheme(DarkTheme, darkTheme);
 
-export type AppTheme = { paper: MD3Theme; navigation: Theme };
+export type AppTheme = { paper: AppPaperTheme; navigation: Theme };
 
 export const useAppTheme = (): AppTheme => {
   const scheme = useColorScheme();
