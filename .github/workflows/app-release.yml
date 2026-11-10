@@ -39,6 +39,8 @@ jobs:
     needs: check
     if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
+    # Fail a hung build instead of letting it run to the 6-hour default.
+    timeout-minutes: 45
     permissions:
       contents: write
     env:
