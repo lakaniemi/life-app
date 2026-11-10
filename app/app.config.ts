@@ -1,5 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
+import withReleaseSigning from "./plugins/with-release-signing.ts";
+import appVersion from "./version.json";
+
 // Evaluated in Node whenever Expo reads the config (start, prebuild, builds),
 // never on the device. APP_VARIANT picks the variant; unset means development,
 // so a production build is always asked for explicitly.
@@ -37,7 +40,10 @@ const variant = variants[variantName];
 const config: ExpoConfig = {
   name: variant.name,
   slug: "life-app",
-  version: "1.0.0",
+  // version is the label people see; versionCode is the integer Android
+  // compares, and it refuses to install a lower one over a higher one. Both
+  // are bumped by hand in version.json, which the release workflow watches.
+  version: appVersion.version,
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: variant.scheme,
@@ -47,6 +53,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: variant.androidPackage,
+    versionCode: appVersion.versionCode,
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -82,4 +89,6 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+// A local plugin is applied by wrapping the config; the `plugins` array only
+// takes package names and paths.
+export default withReleaseSigning(config);

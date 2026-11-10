@@ -5,11 +5,13 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/app.yml'
+      - '.github/scripts/check-app-version.sh'
   push:
     branches: [main]
     paths:
       - 'app/**'
       - '.github/workflows/app.yml'
+      - '.github/scripts/check-app-version.sh'
 
 permissions:
   contents: read
@@ -23,6 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The version check compares app/version.json with the release tags.
+          fetch-depth: 0
+      # A bad version bump fails here, on the pull request, not after the merge
+      # when the release workflow would trip over it.
+      - run: ../.github/scripts/check-app-version.sh
       - uses: actions/setup-node@v7
         with:
           node-version-file: app/.nvmrc
