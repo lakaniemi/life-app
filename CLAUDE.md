@@ -40,12 +40,12 @@ The user has to be able to review every PR, so PRs stay small and stand on their
   - **`GET /health`** stays public and cheap. Its `version` (the build's commit) is how a deploy is confirmed.
   - Postgres runs on the same host, reachable only on an internal network, so the API connects without TLS.
 - **App releases:** the signed APK is a GitHub release (`life-app.apk`, built on GitHub Actions, no EAS). Bumping `app/version.json` (version and `versionCode`, by hand) on `main` triggers the release, and CI refuses an APK not signed with the release key. See `app/README.md`, Releasing.
+- **No over-the-air updates.** Every app change ships as a new APK, so a version number always identifies exactly what runs. The app finds a newer release through a `latest.json` asset on the GitHub release (not an API endpoint), downloads the APK itself and opens Android's installer. `expo-updates` and an update server were rejected as more moving parts than two users need. See `app/docs/ARCHITECTURE.md`, In-app updates.
 
 ## Open decisions
 
 Don't present these as decided.
 
-- **Over-the-air update server.** The app uses the stock `expo-updates` client against a self-hosted server implementing the Expo Updates protocol, not EAS Update. Which server (xprem, formerly expo-open-ota, or our own in Go) is decided when the Over-the-air updates slice is planned, the last on the roadmap.
 - **Dependency maintenance.** How new versions (Expo SDK patches, npm and Go packages) get noticed and bumped. App CI checks versions only against the installed SDK, so nothing flags new patches yet.
 
 Update these lists as decisions get made, so future sessions don't need to re-derive context from conversation history.

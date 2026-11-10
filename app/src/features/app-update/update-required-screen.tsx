@@ -8,8 +8,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export const latestApkUrl =
   "https://github.com/lakaniemi/life-app/releases/latest/download/life-app.apk";
 
-// Blocks the whole app when the API has turned it away as too old. Until
-// over-the-air updates exist, the only fix is a new APK.
+// Blocks the whole app when the API has turned it away as too old. The only
+// fix is a new APK.
 export const UpdateRequiredScreen = () => {
   const { t } = useTranslation();
   const { colors } = useTheme();
